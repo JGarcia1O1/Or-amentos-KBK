@@ -150,6 +150,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session?.user?.email) {
         setCurrentUser(session.user.user_metadata?.display_name || 'Utilizador KUBIK');
+        // Fetch role from Supabase DB
+        supabase.from('user_roles').select('role').eq('user_id', session.user.id).single()
+          .then(({ data }) => {
+             if (data && data.role === 'admin') setUserRole('admin');
+             else setUserRole('gestor'); // Fallback regular user
+          });
       } else {
         setCurrentUser('Não autenticado');
       }
@@ -160,6 +166,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       (event, session) => {
         if (session?.user?.email) {
           setCurrentUser(session.user.user_metadata?.display_name || 'Utilizador KUBIK');
+          supabase.from('user_roles').select('role').eq('user_id', session.user.id).single()
+            .then(({ data }) => {
+               if (data && data.role === 'admin') setUserRole('admin');
+               else setUserRole('gestor');
+            });
         } else {
           setCurrentUser('Não autenticado');
         }
