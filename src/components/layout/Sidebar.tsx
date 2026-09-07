@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useApp } from '@/context/AppContext';
 import {
   FileSpreadsheet,
@@ -10,10 +10,13 @@ import {
   Factory,
   Package,
   Receipt,
-  UserCheck, Mail,
+  UserCheck, Settings, LogOut, Mail,
 } from 'lucide-react';
 
+import ProfileSettingsModal from './ProfileSettingsModal';
+
 export default function Sidebar() {
+  const [showProfile, setShowProfile] = useState(false);
   const {
     currentView,
     setCurrentView,
@@ -199,42 +202,41 @@ export default function Sidebar() {
         </nav>
       </div>
 
-      {/* Rodapé da Sidebar: Multi-Utilizador / Perfil */}
-      {/* [MODO HIDDEN]: Mantido intacto no código a pedido. Para reativar no futuro, basta alterar SHOW_USER_PROFILE para true */}
-      {(() => {
-        const SHOW_USER_PROFILE = false;
-        if (!SHOW_USER_PROFILE) {
-          return (
-            <div className="p-3 border-t border-gray-100 bg-gray-50/40 text-center">
-              <p className="text-[10px] text-gray-400 font-medium">
-                KUBIK HOME & LIFE FURNITURE
-              </p>
-            </div>
-          );
-        }
-        return (
-          <div className="p-3 border-t border-gray-100 bg-gray-50/50">
-            <div className="text-[10px] font-bold text-gray-400 uppercase px-2 mb-1 flex items-center gap-1">
-              <UserCheck className="w-3 h-3 text-gray-400" />
-              <span>Utilizador Ativo</span>
-            </div>
-            <div className="relative">
-              <select
-                value={currentUser}
-                onChange={(e) => setCurrentUser(e.target.value)}
-                className="w-full text-xs font-semibold bg-white border border-gray-200 rounded-lg p-2 focus:ring-1 focus:ring-black outline-none cursor-pointer"
-              >
-                <option value="Luís Cunha">Luís Cunha (Comercial)</option>
-                <option value="João Silva">João Silva (Comercial)</option>
-                <option value="Gerência">Gerência (Direção)</option>
-              </select>
-            </div>
-            <p className="text-[10px] text-gray-400 px-2 mt-1.5">
-              3-4 utilizadores em simultâneo
-            </p>
-          </div>
-        );
-      })()}
+            {/* NOVO RODAPÉ DE UTILIZADOR */}
+      <div className="p-3 border-t border-gray-100 bg-gray-50 flex items-center justify-between">
+        <button 
+          onClick={() => setShowProfile(true)}
+          className="flex flex-col text-left hover:bg-gray-200 p-2 rounded-xl transition-colors min-w-0"
+        >
+          <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-0.5">Operador</span>
+          <span className="text-xs font-bold text-gray-900 truncate max-w-[120px]">{currentUser}</span>
+        </button>
+
+        <div className="flex items-center gap-1">
+          <button 
+            onClick={() => setShowProfile(true)}
+            className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+            title="Definições de Perfil"
+          >
+            <Settings className="w-4 h-4" />
+          </button>
+          <button 
+            onClick={() => {
+              import('@/lib/supabase').then(({ supabase }) => {
+                supabase.auth.signOut().then(() => {
+                  window.location.href = '/login';
+                });
+              });
+            }}
+            className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+            title="Terminar Sessão"
+          >
+            <LogOut className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+
+      {showProfile && <ProfileSettingsModal onClose={() => setShowProfile(false)} />}
     </aside>
   );
 }

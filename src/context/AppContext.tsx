@@ -149,7 +149,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     // Get initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session?.user?.email) {
-        setCurrentUser(session.user.email);
+        setCurrentUser(session.user.user_metadata?.display_name || 'Utilizador KUBIK');
       } else {
         setCurrentUser('Não autenticado');
       }
@@ -159,7 +159,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     const { data: authListener } = supabase.auth.onAuthStateChange(
       (event, session) => {
         if (session?.user?.email) {
-          setCurrentUser(session.user.email);
+          setCurrentUser(session.user.user_metadata?.display_name || 'Utilizador KUBIK');
         } else {
           setCurrentUser('Não autenticado');
         }
