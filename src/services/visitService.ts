@@ -19,7 +19,7 @@ export const VisitService = {
   },
 
   async save(visit: SiteVisit): Promise<SiteVisit> {
-    const isNew = !visit.id.startsWith('vis-') && !visit.id.includes('-'); // Rough check for temp vs real uuid
+    const isNew = !visit.id || visit.id.startsWith('temp-'); // Rough check for temp vs real uuid
 
     const payload: any = {
       number: visit.number,
