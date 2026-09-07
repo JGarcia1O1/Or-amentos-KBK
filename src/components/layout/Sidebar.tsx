@@ -87,9 +87,28 @@ export default function Sidebar() {
 
           {/* Módulo Clientes */}
           {userRole !== 'trabalhador' && (
-            <button
-              type="button"
-              onClick={() => setCurrentView('clients')}
+              <button
+                type="button"
+                onClick={() => {
+                  setCurrentView('visits-list');
+                }}
+                className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs transition-colors ${
+                  currentView.startsWith('visit')
+                    ? 'bg-gray-900 text-white font-medium shadow-sm'
+                    : 'text-gray-600 hover:bg-gray-100'
+                }`}
+              >
+                <div className="flex items-center gap-2.5">
+                  <ClipboardList className="w-4 h-4" />
+                  <span>Fichas de Obra</span>
+                </div>
+              </button>
+            )}
+            
+            {userRole !== 'trabalhador' && (
+              <button
+                type="button"
+                onClick={() => setCurrentView('clients')}
               className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs transition-colors ${
                 currentView === 'clients'
                   ? 'bg-gray-900 text-white font-medium shadow-sm'
