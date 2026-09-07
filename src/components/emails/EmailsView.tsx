@@ -1,10 +1,20 @@
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { Mail, Copy, Check, Info, FileText } from 'lucide-react';
+import { Mail, Copy, Check, Info, FileText, Plus, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useApp } from '@/context/AppContext';
 import { calculateQuoteTotalWithVat } from '@/lib/calculator';
+
+interface EmailInvoice {
+  id: string;
+  invoiceNum: string;
+  invoiceDate: string;
+  dueDate: string;
+  amount: string;
+  delayDays: string;
+  quoteId?: string;
+}
 
 export default function EmailsView() {
   const { quotes } = useApp();
@@ -12,15 +22,14 @@ export default function EmailsView() {
   const [templateType, setTemplateType] = useState('lembrete');
   const [dataSource, setDataSource] = useState<'auto' | 'manual'>('auto');
   const [showTable, setShowTable] = useState(true);
-  const [selectedQuoteId, setSelectedQuoteId] = useState('');
 
-  // Manual fields
+  // Global field
   const [clientName, setClientName] = useState('');
-  const [invoiceNum, setInvoiceNum] = useState('');
-  const [invoiceDate, setInvoiceDate] = useState('');
-  const [dueDate, setDueDate] = useState('');
-  const [amount, setAmount] = useState('');
-  const [delayDays, setDelayDays] = useState('');
+
+  // Multi-invoice state
+  const [invoices, setInvoices] = useState<EmailInvoice[]>([
+    { id: crypto.randomUUID(), invoiceNum: '', invoiceDate: '', dueDate: '', amount: '', delayDays: '' }
+  ]);
 
   const [copied, setCopied] = useState(false);
 
@@ -38,66 +47,111 @@ export default function EmailsView() {
     return date.toLocaleDateString('pt-PT', { day: '2-digit', month: '2-digit', year: 'numeric' });
   };
 
-  // Sync auto data when selectedQuoteId changes
-  useEffect(() => {
-    if (dataSource === 'auto' && selectedQuoteId) {
-      const q = quotes.find(q => q.id === selectedQuoteId);
-      if (q) {
-        setClientName(q.clientName || '');
-        setInvoiceNum(q.number || '');
-        setInvoiceDate(q.date || '');
-        
-        const total = calculateQuoteTotalWithVat(q);
-        setAmount(total.toFixed(2));
+  // Auto mode: Add a quote
+  const addInvoiceFromQuote = (quoteId: string) => {
+    if (!quoteId) return;
+    
+    const q = quotes.find(q => q.id === quoteId);
+    if (!q) return;
 
-        // Calculate due date based on validity days
-        let dDate = '';
-        let dDays = '';
-        const parsedMovementDate = parseDateStr(q.date);
-        
-        if (parsedMovementDate) {
-          const validity = q.validityDays || 30;
-          const due = new Date(parsedMovementDate.getTime() + validity * 24 * 60 * 60 * 1000);
-          dDate = formatDatePT(due);
-          setDueDate(dDate);
+    if (!clientName) {
+      setClientName(q.clientName || '');
+    }
 
+    const total = calculateQuoteTotalWithVat(q);
+    
+    let dDate = '';
+    let dDays = '0';
+    const parsedMovementDate = parseDateStr(q.date);
+    
+    if (parsedMovementDate) {
+      const validity = q.validityDays || 30;
+      const due = new Date(parsedMovementDate.getTime() + validity * 24 * 60 * 60 * 1000);
+      dDate = formatDatePT(due);
+
+      const now = new Date();
+      const diffTime = now.getTime() - due.getTime();
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      dDays = diffDays > 0 ? diffDays.toString() : '0';
+    }
+
+    const newInvoice: EmailInvoice = {
+      id: crypto.randomUUID(),
+      invoiceNum: q.number || '',
+      invoiceDate: q.date || '',
+      dueDate: dDate,
+      amount: total.toFixed(2),
+      delayDays: dDays,
+      quoteId: q.id
+    };
+
+    // If there is only one empty invoice, replace it. Otherwise append.
+    setInvoices(prev => {
+      if (prev.length === 1 && !prev[0].invoiceNum && !prev[0].amount) {
+        return [newInvoice];
+      }
+      // check if already added to avoid duplicates
+      if (prev.some(inv => inv.quoteId === quoteId)) {
+        toast.info('Documento já adicionado.');
+        return prev;
+      }
+      return [...prev, newInvoice];
+    });
+  };
+
+  const removeInvoice = (id: string) => {
+    setInvoices(prev => {
+      if (prev.length === 1) {
+        return [{ id: crypto.randomUUID(), invoiceNum: '', invoiceDate: '', dueDate: '', amount: '', delayDays: '' }];
+      }
+      return prev.filter(inv => inv.id !== id);
+    });
+  };
+
+  const addManualInvoice = () => {
+    setInvoices(prev => [
+      ...prev,
+      { id: crypto.randomUUID(), invoiceNum: '', invoiceDate: '', dueDate: '', amount: '', delayDays: '' }
+    ]);
+  };
+
+  const updateInvoice = (id: string, field: keyof EmailInvoice, value: string) => {
+    setInvoices(prev => prev.map(inv => {
+      if (inv.id !== id) return inv;
+      const updated = { ...inv, [field]: value };
+      
+      // Auto-calc delay days if due date is typed properly
+      if (field === 'dueDate') {
+        const parsed = parseDateStr(value);
+        if (parsed) {
           const now = new Date();
-          const diffTime = now.getTime() - due.getTime();
+          const diffTime = now.getTime() - parsed.getTime();
           const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-          dDays = diffDays > 0 ? diffDays.toString() : '0';
-          setDelayDays(dDays);
-        } else {
-          setDueDate('');
-          setDelayDays('');
+          updated.delayDays = diffDays > 0 ? diffDays.toString() : '0';
         }
       }
-    }
-  }, [dataSource, selectedQuoteId, quotes]);
+      return updated;
+    }));
+  };
 
-  const activeData = useMemo(() => {
-    return {
-      clientName: clientName.trim(),
-      invoiceNum: invoiceNum.trim(),
-      invoiceDate: invoiceDate.trim(),
-      dueDate: dueDate.trim(),
-      amount: amount.trim(),
-      delayDays: delayDays.trim(),
-    };
-  }, [clientName, invoiceNum, invoiceDate, dueDate, amount, delayDays]);
+  const totalAmountValue = useMemo(() => {
+    return invoices.reduce((acc, inv) => {
+      const num = parseFloat(inv.amount.replace(',', '.'));
+      return acc + (isNaN(num) ? 0 : num);
+    }, 0);
+  }, [invoices]);
 
-  const isValidAmount = !isNaN(parseFloat(activeData.amount.replace(',', '.')));
-  
-  const canGenerate = !!activeData.clientName && !!activeData.invoiceNum && !!activeData.dueDate && !!activeData.amount && isValidAmount;
+  const canGenerate = clientName.trim() !== '' && invoices.every(inv => inv.invoiceNum && inv.dueDate && inv.amount && !isNaN(parseFloat(inv.amount.replace(',', '.'))));
 
   // Formatting
-  const formatCurrencyPT = (val: string) => {
-    const num = parseFloat(val.replace(',', '.'));
+  const formatCurrencyPT = (val: number | string) => {
+    const num = typeof val === 'string' ? parseFloat(val.replace(',', '.')) : val;
     if (isNaN(num)) return '0,00 €';
     return new Intl.NumberFormat('pt-PT', { style: 'currency', currency: 'EUR' }).format(num);
   };
 
   const getSubject = () => {
-    const nome = activeData.clientName || '[Nome do Cliente]';
+    const nome = clientName.trim() || '[Nome do Cliente]';
     switch (templateType) {
       case 'lembrete': return `Lembrete de Pagamento | ${nome}`;
       case '1_aviso': return `1.º Aviso — Valores Pendentes | ${nome}`;
@@ -125,41 +179,55 @@ export default function EmailsView() {
       closing = `<p>Após a realização do pagamento, agradecemos o envio do respectivo comprovativo de transferência em resposta a este e-mail.</p><p>Caso a situação tenha sido entretanto regularizada, agradecemos que desconsidere esta comunicação e nos envie o respectivo comprovativo, para que possamos actualizar os nossos registos.</p>`;
     }
 
-    const valorFormatado = formatCurrencyPT(activeData.amount);
+    const totalFormatado = formatCurrencyPT(totalAmountValue);
 
-    const tableHtml = showTable ? `
-      <table style="width: 100%; border-collapse: collapse; font-family: Calibri, Arial, sans-serif; font-size: 13px; margin-bottom: 20px;">
-        <thead>
-          <tr style="background-color: #111827; color: white;">
-            <th style="padding: 10px; text-align: left; border: 1px solid #374151;">Documento</th>
-            <th style="padding: 10px; text-align: center; border: 1px solid #374151;">N.º Documento</th>
-            <th style="padding: 10px; text-align: center; border: 1px solid #374151;">Movimento</th>
-            <th style="padding: 10px; text-align: center; border: 1px solid #374151;">Vencimento</th>
-            <th style="padding: 10px; text-align: right; border: 1px solid #374151;">Valor</th>
-            <th style="padding: 10px; text-align: right; border: 1px solid #374151;">Saldo</th>
-            <th style="padding: 10px; text-align: right; border: 1px solid #374151;">Dias em atraso</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td style="padding: 10px; border: 1px solid #d1d5db;">Factura</td>
-            <td style="padding: 10px; text-align: center; border: 1px solid #d1d5db;">${activeData.invoiceNum || '...'}</td>
-            <td style="padding: 10px; text-align: center; border: 1px solid #d1d5db;">${activeData.invoiceDate || '...'}</td>
-            <td style="padding: 10px; text-align: center; border: 1px solid #d1d5db;">${activeData.dueDate || '...'}</td>
-            <td style="padding: 10px; text-align: right; border: 1px solid #d1d5db;">${valorFormatado}</td>
-            <td style="padding: 10px; text-align: right; border: 1px solid #d1d5db;">${valorFormatado}</td>
-            <td style="padding: 10px; text-align: right; border: 1px solid #d1d5db;">${activeData.delayDays || '0'}</td>
-          </tr>
-        </tbody>
-      </table>
-      <p><strong>Total em dívida: ${valorFormatado}</strong></p>
-    ` : `
-      <div style="margin-bottom: 20px; padding: 15px; border-left: 3px solid #111827; background-color: #f9fafb;">
-        <p style="margin: 0 0 5px 0;"><strong>Documento:</strong> Factura n.º ${activeData.invoiceNum || '...'}</p>
-        <p style="margin: 0 0 5px 0;"><strong>Data de Movimento:</strong> ${activeData.invoiceDate || '...'}</p>
-        <p style="margin: 0 0 5px 0;"><strong>Data de Vencimento:</strong> ${activeData.dueDate || '...'} (${activeData.delayDays || '0'} dias em atraso)</p>
-      </div>
-      <p><strong>Total em dívida: ${valorFormatado}</strong></p>
+    let itemsHtml = '';
+    
+    if (showTable) {
+      const rows = invoices.map(inv => `
+        <tr>
+          <td style="padding: 10px; border: 1px solid #d1d5db;">Factura</td>
+          <td style="padding: 10px; text-align: center; border: 1px solid #d1d5db;">${inv.invoiceNum || '...'}</td>
+          <td style="padding: 10px; text-align: center; border: 1px solid #d1d5db;">${inv.invoiceDate || '...'}</td>
+          <td style="padding: 10px; text-align: center; border: 1px solid #d1d5db;">${inv.dueDate || '...'}</td>
+          <td style="padding: 10px; text-align: right; border: 1px solid #d1d5db;">${formatCurrencyPT(inv.amount)}</td>
+          <td style="padding: 10px; text-align: right; border: 1px solid #d1d5db;">${formatCurrencyPT(inv.amount)}</td>
+          <td style="padding: 10px; text-align: right; border: 1px solid #d1d5db;">${inv.delayDays || '0'}</td>
+        </tr>
+      `).join('');
+
+      itemsHtml = `
+        <table style="width: 100%; border-collapse: collapse; font-family: Calibri, Arial, sans-serif; font-size: 13px; margin-bottom: 20px;">
+          <thead>
+            <tr style="background-color: #111827; color: white;">
+              <th style="padding: 10px; text-align: left; border: 1px solid #374151;">Documento</th>
+              <th style="padding: 10px; text-align: center; border: 1px solid #374151;">N.º Documento</th>
+              <th style="padding: 10px; text-align: center; border: 1px solid #374151;">Movimento</th>
+              <th style="padding: 10px; text-align: center; border: 1px solid #374151;">Vencimento</th>
+              <th style="padding: 10px; text-align: right; border: 1px solid #374151;">Valor</th>
+              <th style="padding: 10px; text-align: right; border: 1px solid #374151;">Saldo</th>
+              <th style="padding: 10px; text-align: right; border: 1px solid #374151;">Dias em atraso</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rows}
+          </tbody>
+        </table>
+      `;
+    } else {
+      itemsHtml = invoices.map(inv => `
+        <div style="margin-bottom: 12px; padding: 12px 15px; border-left: 3px solid #111827; background-color: #f9fafb;">
+          <p style="margin: 0 0 4px 0;"><strong>Documento:</strong> Factura n.º ${inv.invoiceNum || '...'}</p>
+          <p style="margin: 0 0 4px 0;"><strong>Data de Movimento:</strong> ${inv.invoiceDate || '...'}</p>
+          <p style="margin: 0 0 4px 0;"><strong>Data de Vencimento:</strong> ${inv.dueDate || '...'} (${inv.delayDays || '0'} dias em atraso)</p>
+          <p style="margin: 0;"><strong>Valor:</strong> ${formatCurrencyPT(inv.amount)}</p>
+        </div>
+      `).join('') + '<br/>';
+    }
+
+    const dataBlock = `
+      ${itemsHtml}
+      <p><strong>Total em dívida: ${totalFormatado}</strong></p>
     `;
 
     const paymentInfo = `
@@ -179,7 +247,7 @@ export default function EmailsView() {
     return `
       <div style="font-family: Calibri, Arial, sans-serif; font-size: 14px; color: #1f2937; line-height: 1.5; max-width: 800px;">
         ${intro}
-        ${tableHtml}
+        ${dataBlock}
         ${paymentInfo}
         ${closing}
         ${signature}
@@ -196,15 +264,13 @@ export default function EmailsView() {
 
   const handleCopy = async () => {
     if (!canGenerate) {
-      toast.error('Preencha os campos obrigatórios corretamente.');
+      toast.error('Preencha os campos obrigatórios corretamente em todas as faturas.');
       return;
     }
     try {
       const html = getBodyHtml();
-      
       const blobHtml = new Blob([html], { type: 'text/html' });
       const blobText = new Blob([getTextPlain()], { type: 'text/plain' });
-      
       const data = [new ClipboardItem({ 'text/html': blobHtml, 'text/plain': blobText })];
       await navigator.clipboard.write(data);
       
@@ -275,6 +341,7 @@ export default function EmailsView() {
                 <span className="text-sm text-gray-700 font-medium">Introduzir dados manualmente</span>
               </label>
             </div>
+
             <div className="mt-4 pt-4 border-t border-gray-200">
               <label className="flex items-center gap-2 cursor-pointer">
                 <input 
@@ -287,24 +354,37 @@ export default function EmailsView() {
               </label>
             </div>
 
-
             {dataSource === 'auto' && (
-              <div className="mt-4 p-4 bg-blue-50/50 border border-blue-100 rounded-xl">
-                <label className="block text-xs font-semibold text-blue-800 mb-1.5 flex items-center gap-1.5">
+              <div className="mt-4 p-4 bg-blue-50/50 border border-blue-100 rounded-xl space-y-3">
+                <label className="block text-xs font-semibold text-blue-800 flex items-center gap-1.5">
                   <FileText className="w-3.5 h-3.5" />
-                  Selecione o Documento
+                  Documentos Adicionados
                 </label>
+                
+                {invoices.filter(inv => inv.quoteId).map((inv, idx) => (
+                  <div key={inv.id} className="flex items-center justify-between bg-white border border-blue-200 p-2.5 rounded-lg text-sm">
+                    <div className="flex flex-col">
+                      <span className="font-bold text-gray-800">Doc: {inv.invoiceNum}</span>
+                      <span className="text-xs text-gray-500">{formatCurrencyPT(inv.amount)}</span>
+                    </div>
+                    <button onClick={() => removeInvoice(inv.id)} className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-md transition-colors">
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                ))}
+
                 <select 
-                  value={selectedQuoteId}
-                  onChange={(e) => setSelectedQuoteId(e.target.value)}
+                  onChange={(e) => {
+                    addInvoiceFromQuote(e.target.value);
+                    e.target.value = '';
+                  }}
                   className="w-full border border-blue-200 rounded-lg p-2 text-sm outline-none focus:border-blue-500 bg-white"
                 >
-                  <option value="">-- Selecione uma proposta --</option>
+                  <option value="">+ Adicionar Documento do Sistema</option>
                   {quotes.map(q => (
                     <option key={q.id} value={q.id}>{q.number} - {q.clientName}</option>
                   ))}
                 </select>
-                {!selectedQuoteId && <p className="text-[11px] text-blue-600 mt-2">Escolha um documento para preencher automaticamente.</p>}
               </div>
             )}
           </div>
@@ -326,67 +406,80 @@ export default function EmailsView() {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-semibold text-gray-700 mb-1.5">
-                    N.º da Factura <span className="text-red-500">*</span>
-                  </label>
-                  <input 
-                    type="text" 
-                    value={invoiceNum}
-                    onChange={(e) => setInvoiceNum(e.target.value)}
-                    placeholder="Ex: 142"
-                    className="w-full border border-gray-200 rounded-xl p-2.5 text-sm outline-none focus:border-blue-500 transition-all bg-white"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-gray-700 mb-1.5">
-                    Valor em dívida <span className="text-red-500">*</span>
-                  </label>
-                  <input 
-                    type="text" 
-                    value={amount}
-                    onChange={(e) => setAmount(e.target.value)}
-                    placeholder="Ex: 3789.38"
-                    className={`w-full border ${amount && !isValidAmount ? 'border-red-300 focus:border-red-500' : 'border-gray-200 focus:border-blue-500'} rounded-xl p-2.5 text-sm outline-none transition-all bg-white`}
-                  />
-                  {amount && !isValidAmount && <p className="text-[10px] text-red-500 mt-1">Introduza um valor válido.</p>}
-                </div>
-              </div>
+              <div className="space-y-4">
+                {invoices.map((inv, idx) => (
+                  <div key={inv.id} className="p-4 bg-white border border-gray-200 rounded-xl relative space-y-4 shadow-sm">
+                    {invoices.length > 1 && (
+                      <button 
+                        onClick={() => removeInvoice(inv.id)}
+                        className="absolute top-2 right-2 p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-md transition-colors"
+                        title="Remover Fatura"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    )}
+                    
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-xs font-semibold text-gray-700 mb-1.5">
+                          N.º da Factura <span className="text-red-500">*</span>
+                        </label>
+                        <input 
+                          type="text" 
+                          value={inv.invoiceNum}
+                          onChange={(e) => updateInvoice(inv.id, 'invoiceNum', e.target.value)}
+                          placeholder="Ex: 142"
+                          className="w-full border border-gray-200 rounded-lg p-2 text-sm outline-none focus:border-blue-500 transition-all"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold text-gray-700 mb-1.5">
+                          Valor <span className="text-red-500">*</span>
+                        </label>
+                        <input 
+                          type="text" 
+                          value={inv.amount}
+                          onChange={(e) => updateInvoice(inv.id, 'amount', e.target.value)}
+                          placeholder="Ex: 3789.38"
+                          className="w-full border border-gray-200 rounded-lg p-2 text-sm outline-none focus:border-blue-500 transition-all"
+                        />
+                      </div>
+                    </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-semibold text-gray-700 mb-1.5">
-                    Data de vencimento <span className="text-red-500">*</span>
-                  </label>
-                  <input 
-                    type="text" 
-                    value={dueDate}
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      setDueDate(val);
-                      const parsed = parseDateStr(val);
-                      if (parsed) {
-                        const now = new Date();
-                        const diffTime = now.getTime() - parsed.getTime();
-                        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-                        setDelayDays(diffDays > 0 ? diffDays.toString() : '0');
-                      }
-                    }}
-                    placeholder="DD/MM/AAAA"
-                    className="w-full border border-gray-200 rounded-xl p-2.5 text-sm outline-none focus:border-blue-500 transition-all bg-white"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-gray-700 mb-1.5">Dias em atraso</label>
-                  <input 
-                    type="number" 
-                    value={delayDays}
-                    onChange={(e) => setDelayDays(e.target.value)}
-                    placeholder="Ex: 30"
-                    className="w-full border border-gray-200 rounded-xl p-2.5 text-sm outline-none focus:border-blue-500 transition-all bg-white"
-                  />
-                </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-xs font-semibold text-gray-700 mb-1.5">
+                          Vencimento <span className="text-red-500">*</span>
+                        </label>
+                        <input 
+                          type="text" 
+                          value={inv.dueDate}
+                          onChange={(e) => updateInvoice(inv.id, 'dueDate', e.target.value)}
+                          placeholder="DD/MM/AAAA"
+                          className="w-full border border-gray-200 rounded-lg p-2 text-sm outline-none focus:border-blue-500 transition-all"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold text-gray-700 mb-1.5">Atraso (Dias)</label>
+                        <input 
+                          type="number" 
+                          value={inv.delayDays}
+                          onChange={(e) => updateInvoice(inv.id, 'delayDays', e.target.value)}
+                          placeholder="Ex: 30"
+                          className="w-full border border-gray-200 rounded-lg p-2 text-sm outline-none focus:border-blue-500 transition-all"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+
+                <button
+                  onClick={addManualInvoice}
+                  className="w-full py-2.5 border-2 border-dashed border-gray-300 rounded-xl text-gray-500 hover:text-gray-700 hover:bg-gray-50 hover:border-gray-400 font-semibold text-sm transition-all flex items-center justify-center gap-2"
+                >
+                  <Plus className="w-4 h-4" />
+                  Adicionar Fatura Manual
+                </button>
               </div>
             </div>
           )}
@@ -405,10 +498,6 @@ export default function EmailsView() {
             </button>
           </div>
           
-          <div className="bg-blue-50/50 p-3 rounded-lg flex gap-2 items-start text-xs text-blue-700 border border-blue-100">
-            <Info className="w-4 h-4 shrink-0 mt-0.5" />
-            <p>Os e-mails mantêm a formatação original quando colados no Outlook (Tabelas, negritos e hierarquia).</p>
-          </div>
         </div>
 
         <div className="col-span-1 lg:col-span-2 space-y-4">
