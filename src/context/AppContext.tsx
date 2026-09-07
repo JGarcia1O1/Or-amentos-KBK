@@ -734,7 +734,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     
     QuoteService.save(newQuote)
       .then(() => toast.success('Orçamento criado'))
-      .catch(() => toast.error('Erro ao criar orçamento'));
+      .catch((e) => toast.error('Erro Supabase: ' + (e.message || e.toString())));
       
     return newQuote;
   };

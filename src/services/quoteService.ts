@@ -13,7 +13,7 @@ export const QuoteService = {
       .select('*')
       .order('created_at', { ascending: false });
 
-    if (error) throw new Error(`Falha ao carregar orçamentos: ${error.message}`);
+    if (error) { console.error("SUPABASE ERROR:", error); throw new Error(error.message); }
     return (data || []).map((q: any) => ({
       id: q.id,
       number: q.number,
