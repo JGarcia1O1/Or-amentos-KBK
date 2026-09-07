@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useApp } from '@/context/AppContext';
 import { VisitService } from '@/services/visitService';
 import { SiteVisit, VisitStatus } from '@/types';
-import { ArrowLeft, Save, MapPin, Phone, User, Calendar, Mail, FileText, CheckSquare } from 'lucide-react';
+import { Check,  ArrowLeft, Save, MapPin, Phone, User, Calendar, Mail, FileText, CheckSquare  } from 'lucide-react';
 import { toast } from 'sonner';
 
 const CHECKLIST_ITEMS = [
@@ -198,7 +198,7 @@ export default function VisitForm() {
                 return (
                   <label key={item.id} className="flex items-start gap-3 cursor-pointer group" onClick={(e) => { e.preventDefault(); toggleChecklist(item.id); }}>
                     <div className={'mt-0.5 w-5 h-5 rounded border flex items-center justify-center transition-colors ' + (isChecked ? 'bg-[#b39b82] border-[#b39b82]' : 'bg-white border-gray-300 group-hover:border-[#b39b82]')}>
-                      {isChecked && <div className="w-2.5 h-2.5 bg-white rounded-sm" />}
+                      {isChecked && <Check className="w-3.5 h-3.5 text-white" strokeWidth={3} />}
                     </div>
                     <span className={'text-sm font-medium select-none ' + (isChecked ? 'text-gray-900' : 'text-gray-600')}>
                       {item.label}
