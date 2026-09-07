@@ -98,10 +98,10 @@ export default function EmailsView() {
   const getSubject = () => {
     const nome = activeData.clientName || '[Nome do Cliente]';
     switch (templateType) {
-      case 'lembrete': return \`Lembrete de Pagamento | \${nome}\`;
-      case '1_aviso': return \`1.º Aviso — Valores Pendentes | \${nome}\`;
-      case '2_aviso': return \`2.º Aviso — Valores Pendentes | \${nome}\`;
-      case '3_aviso': return \`3.º Aviso — Pré-Contencioso | \${nome}\`;
+      case 'lembrete': return `Lembrete de Pagamento | ${nome}`;
+      case '1_aviso': return `1.º Aviso — Valores Pendentes | ${nome}`;
+      case '2_aviso': return `2.º Aviso — Valores Pendentes | ${nome}`;
+      case '3_aviso': return `3.º Aviso — Pré-Contencioso | ${nome}`;
       default: return '';
     }
   };
@@ -111,23 +111,23 @@ export default function EmailsView() {
     let closing = '';
 
     if (templateType === 'lembrete') {
-      intro = \`<p>Exmo.(a) Senhor(a),</p><p>Esperamos que se encontre bem.</p><p>Verificámos que se encontra pendente a regularização do(s) documento(s) abaixo indicado(s). Assim, agradecemos que, caso o pagamento ainda não tenha sido efectuado, proceda à respectiva liquidação com a maior brevidade possível.</p>\`;
-      closing = \`<p>Após a realização do pagamento, agradecemos o envio do respectivo comprovativo de transferência em resposta a este e-mail.</p><p>Caso o pagamento já tenha sido efectuado, agradecemos que desconsidere esta mensagem.</p>\`;
+      intro = `<p>Exmo.(a) Senhor(a),</p><p>Esperamos que se encontre bem.</p><p>Verificámos que se encontra pendente a regularização do(s) documento(s) abaixo indicado(s). Assim, agradecemos que, caso o pagamento ainda não tenha sido efectuado, proceda à respectiva liquidação com a maior brevidade possível.</p>`;
+      closing = `<p>Após a realização do pagamento, agradecemos o envio do respectivo comprovativo de transferência em resposta a este e-mail.</p><p>Caso o pagamento já tenha sido efectuado, agradecemos que desconsidere esta mensagem.</p>`;
     } else if (templateType === '1_aviso') {
-      intro = \`<p>Exmo.(a) Senhor(a),</p><p>Esperamos que se encontre bem.</p><p>Verificámos que, até à presente data, não temos registo da regularização dos documentos abaixo indicados, entretanto vencidos.</p><p>Nesse sentido, solicitamos a liquidação dos valores pendentes com a maior brevidade possível.</p>\`;
-      closing = \`<p>Após a realização do pagamento, agradecemos o envio do respectivo comprovativo de transferência em resposta a este e-mail.</p><p>Caso a situação já tenha sido regularizada, agradecemos que desconsidere esta comunicação.</p>\`;
+      intro = `<p>Exmo.(a) Senhor(a),</p><p>Esperamos que se encontre bem.</p><p>Verificámos que, até à presente data, não temos registo da regularização dos documentos abaixo indicados, entretanto vencidos.</p><p>Nesse sentido, solicitamos a liquidação dos valores pendentes com a maior brevidade possível.</p>`;
+      closing = `<p>Após a realização do pagamento, agradecemos o envio do respectivo comprovativo de transferência em resposta a este e-mail.</p><p>Caso a situação já tenha sido regularizada, agradecemos que desconsidere esta comunicação.</p>`;
     } else if (templateType === '2_aviso') {
-      intro = \`<p>Exmo.(a) Senhor(a),</p><p>Esperamos que se encontre bem.</p><p>Na sequência da nossa anterior comunicação, verificamos que permanecem por regularizar os valores correspondentes aos documentos abaixo indicados.</p><p>Até à presente data, não temos registo do respectivo pagamento.</p><p>Solicitamos, por isso, que proceda à regularização dos valores pendentes no prazo máximo de 5 dias, de forma a evitar o encaminhamento da situação para as diligências subsequentes.</p>\`;
-      closing = \`<p>Após a realização do pagamento, agradecemos o envio do respectivo comprovativo de transferência em resposta a este e-mail.</p><p>Caso o pagamento já tenha sido efectuado, agradecemos que desconsidere esta comunicação e, se possível, nos envie o respectivo comprovativo.</p>\`;
+      intro = `<p>Exmo.(a) Senhor(a),</p><p>Esperamos que se encontre bem.</p><p>Na sequência da nossa anterior comunicação, verificamos que permanecem por regularizar os valores correspondentes aos documentos abaixo indicados.</p><p>Até à presente data, não temos registo do respectivo pagamento.</p><p>Solicitamos, por isso, que proceda à regularização dos valores pendentes no prazo máximo de 5 dias, de forma a evitar o encaminhamento da situação para as diligências subsequentes.</p>`;
+      closing = `<p>Após a realização do pagamento, agradecemos o envio do respectivo comprovativo de transferência em resposta a este e-mail.</p><p>Caso o pagamento já tenha sido efectuado, agradecemos que desconsidere esta comunicação e, se possível, nos envie o respectivo comprovativo.</p>`;
     } else if (templateType === '3_aviso') {
-      intro = \`<p>Exmo.(a) Senhor(a),</p><p>Na sequência das nossas anteriores comunicações, verificamos que permanecem por regularizar os valores relativos aos documentos abaixo indicados.</p><p>Apesar dos avisos anteriormente enviados, não temos, até à presente data, registo da regularização da totalidade do montante em dívida.</p><p>Solicitamos, assim, a regularização integral dos valores pendentes no prazo máximo de 8 dias.</p><p>Findo esse prazo sem que a situação seja regularizada, o processo poderá ser encaminhado para o nosso departamento jurídico, para análise e eventual adopção das diligências legais adequadas.</p>\`;
-      closing = \`<p>Após a realização do pagamento, agradecemos o envio do respectivo comprovativo de transferência em resposta a este e-mail.</p><p>Caso a situação tenha sido entretanto regularizada, agradecemos que desconsidere esta comunicação e nos envie o respectivo comprovativo, para que possamos actualizar os nossos registos.</p>\`;
+      intro = `<p>Exmo.(a) Senhor(a),</p><p>Na sequência das nossas anteriores comunicações, verificamos que permanecem por regularizar os valores relativos aos documentos abaixo indicados.</p><p>Apesar dos avisos anteriormente enviados, não temos, até à presente data, registo da regularização da totalidade do montante em dívida.</p><p>Solicitamos, assim, a regularização integral dos valores pendentes no prazo máximo de 8 dias.</p><p>Findo esse prazo sem que a situação seja regularizada, o processo poderá ser encaminhado para o nosso departamento jurídico, para análise e eventual adopção das diligências legais adequadas.</p>`;
+      closing = `<p>Após a realização do pagamento, agradecemos o envio do respectivo comprovativo de transferência em resposta a este e-mail.</p><p>Caso a situação tenha sido entretanto regularizada, agradecemos que desconsidere esta comunicação e nos envie o respectivo comprovativo, para que possamos actualizar os nossos registos.</p>`;
     }
 
     const valorFormatado = formatCurrencyPT(activeData.amount);
 
-    const tableHtml = \`
-      <p>C/C de \${activeData.clientName || '[Nome do Cliente]'}</p>
+    const tableHtml = `
+      <p>C/C de ${activeData.clientName || '[Nome do Cliente]'}</p>
       <table style="width: 100%; border-collapse: collapse; font-family: Calibri, Arial, sans-serif; font-size: 13px; margin-bottom: 20px;">
         <thead>
           <tr style="background-color: #111827; color: white;">
@@ -143,51 +143,48 @@ export default function EmailsView() {
         <tbody>
           <tr>
             <td style="padding: 10px; border: 1px solid #d1d5db;">Factura</td>
-            <td style="padding: 10px; text-align: center; border: 1px solid #d1d5db;">\${activeData.invoiceNum || '...'}</td>
-            <td style="padding: 10px; text-align: center; border: 1px solid #d1d5db;">\${activeData.invoiceDate || '...'}</td>
-            <td style="padding: 10px; text-align: center; border: 1px solid #d1d5db;">\${activeData.dueDate || '...'}</td>
-            <td style="padding: 10px; text-align: right; border: 1px solid #d1d5db;">\${valorFormatado}</td>
-            <td style="padding: 10px; text-align: right; border: 1px solid #d1d5db;">\${valorFormatado}</td>
-            <td style="padding: 10px; text-align: right; border: 1px solid #d1d5db;">\${activeData.delayDays || '0'}</td>
+            <td style="padding: 10px; text-align: center; border: 1px solid #d1d5db;">${activeData.invoiceNum || '...'}</td>
+            <td style="padding: 10px; text-align: center; border: 1px solid #d1d5db;">${activeData.invoiceDate || '...'}</td>
+            <td style="padding: 10px; text-align: center; border: 1px solid #d1d5db;">${activeData.dueDate || '...'}</td>
+            <td style="padding: 10px; text-align: right; border: 1px solid #d1d5db;">${valorFormatado}</td>
+            <td style="padding: 10px; text-align: right; border: 1px solid #d1d5db;">${valorFormatado}</td>
+            <td style="padding: 10px; text-align: right; border: 1px solid #d1d5db;">${activeData.delayDays || '0'}</td>
           </tr>
         </tbody>
       </table>
-      <p><strong>Total em dívida: \${valorFormatado}</strong></p>
-    \`;
+      <p><strong>Total em dívida: ${valorFormatado}</strong></p>
+    `;
 
-    const paymentInfo = \`
+    const paymentInfo = `
       <br>
       <p><strong>Dados para pagamento</strong><br>
       Bankinter<br>
       IBAN: PT50 0269 0343 00205777602 83</p>
-    \`;
+    `;
 
-    const signature = \`
+    const signature = `
       <br>
       <p>Com os melhores cumprimentos,</p>
       <p>Departamento Financeiro<br>
       Kubik Home, Lda.</p>
-    \`;
+    `;
 
-    return \`
+    return `
       <div style="font-family: Calibri, Arial, sans-serif; font-size: 14px; color: #1f2937; line-height: 1.5; max-width: 800px;">
-        \${intro}
-        \${tableHtml}
-        \${paymentInfo}
-        \${closing}
-        \${signature}
+        ${intro}
+        ${tableHtml}
+        ${paymentInfo}
+        ${closing}
+        ${signature}
       </div>
-    \`;
+    `;
   };
 
   const getTextPlain = () => {
-    // Generate a simple text version fallback
     const el = document.createElement('div');
     el.innerHTML = getBodyHtml();
-    
-    // Replace br and p with newlines
     let text = el.innerText;
-    return text.replace(/\\n\\n+/g, '\\n\\n').trim();
+    return text.replace(/\n\n+/g, '\n\n').trim();
   };
 
   const handleCopy = async () => {
@@ -227,7 +224,6 @@ export default function EmailsView() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Lado Esquerdo: Formulário */}
         <div className="col-span-1 space-y-5 bg-gray-50 p-5 rounded-2xl border border-gray-100">
           
           <div className="space-y-4">
@@ -333,7 +329,7 @@ export default function EmailsView() {
                     value={amount}
                     onChange={(e) => setAmount(e.target.value)}
                     placeholder="Ex: 3789.38"
-                    className={\`w-full border \${amount && !isValidAmount ? 'border-red-300 focus:border-red-500' : 'border-gray-200 focus:border-blue-500'} rounded-xl p-2.5 text-sm outline-none transition-all bg-white\`}
+                    className={`w-full border ${amount && !isValidAmount ? 'border-red-300 focus:border-red-500' : 'border-gray-200 focus:border-blue-500'} rounded-xl p-2.5 text-sm outline-none transition-all bg-white`}
                   />
                   {amount && !isValidAmount && <p className="text-[10px] text-red-500 mt-1">Introduza um valor válido.</p>}
                 </div>
@@ -350,7 +346,6 @@ export default function EmailsView() {
                     onChange={(e) => {
                       const val = e.target.value;
                       setDueDate(val);
-                      // Automatic auto-calc delay days if proper DD/MM/YYYY
                       const parsed = parseDateStr(val);
                       if (parsed) {
                         const now = new Date();
@@ -381,10 +376,10 @@ export default function EmailsView() {
             <button
               onClick={handleCopy}
               disabled={!canGenerate}
-              className={\`w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl font-bold text-sm transition-all \${
+              className={`w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl font-bold text-sm transition-all ${
                 copied ? 'bg-emerald-500 text-white shadow-emerald-500/20' : 
                 canGenerate ? 'bg-black text-white hover:bg-gray-800 hover:shadow-lg' : 'bg-gray-200 text-gray-400 cursor-not-allowed'
-              } shadow-md\`}
+              } shadow-md`}
             >
               {copied ? <Check className="w-5 h-5" /> : <Copy className="w-5 h-5" />}
               {copied ? '✓ E-mail copiado' : 'Copiar E-mail'}
@@ -397,7 +392,6 @@ export default function EmailsView() {
           </div>
         </div>
 
-        {/* Lado Direito: Preview do E-mail */}
         <div className="col-span-1 lg:col-span-2 space-y-4">
           <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden flex flex-col h-full">
             <div className="bg-gray-50 px-6 py-4 border-b border-gray-200 flex items-center justify-between">
