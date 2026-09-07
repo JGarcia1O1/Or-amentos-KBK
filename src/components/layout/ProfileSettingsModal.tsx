@@ -3,14 +3,19 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
-import { X, User, Lock, Save, Shield } from 'lucide-react';
+import { X, User, Lock, Save, Shield, KeyRound } from 'lucide-react';
 import { useApp } from '@/context/AppContext';
 
 export default function ProfileSettingsModal({ onClose }: { onClose: () => void }) {
-  const { currentUser, setCurrentUser } = useApp();
+  const { setCurrentUser } = useApp();
   const [email, setEmail] = useState('');
   const [displayName, setDisplayName] = useState('');
+  
+  // States for Password Change
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
+  const [oldPassword, setOldPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
+  
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
@@ -25,38 +30,46 @@ export default function ProfileSettingsModal({ onClose }: { onClose: () => void 
   const handleSave = async () => {
     setIsSaving(true);
     try {
-      const updates: any = {};
-      
-      // Update Name
-      if (displayName.trim()) {
-        updates.data = { display_name: displayName.trim() };
-      }
-
-      // Update Password if filled
-      if (newPassword.trim()) {
-        if (newPassword.length < 6) {
-          toast.error('A password deve ter pelo menos 6 caracteres');
+      // 1. Update Password (if user toggled the password change form)
+      if (isChangingPassword) {
+        if (!oldPassword.trim() || !newPassword.trim()) {
+          toast.error('Preencha a password antiga e a nova password.');
           setIsSaving(false);
           return;
         }
-        updates.password = newPassword.trim();
+        if (newPassword.length < 6) {
+          toast.error('A nova password deve ter pelo menos 6 caracteres.');
+          setIsSaving(false);
+          return;
+        }
+
+        // Verify old password by attempting to sign in
+        const { error: signInError } = await supabase.auth.signInWithPassword({
+          email: email,
+          password: oldPassword
+        });
+
+        if (signInError) {
+          toast.error('A password antiga está incorreta. Acesso negado.');
+          setIsSaving(false);
+          return;
+        }
+
+        // If old password is correct, update to new password
+        const { error: updatePwError } = await supabase.auth.updateUser({ password: newPassword.trim() });
+        if (updatePwError) throw updatePwError;
       }
 
-      if (Object.keys(updates).length === 0) {
-        toast.info('Nenhuma alteração para guardar');
-        setIsSaving(false);
-        return;
+      // 2. Update Name
+      if (displayName.trim()) {
+        const { error: updateNameError } = await supabase.auth.updateUser({ 
+          data: { display_name: displayName.trim() } 
+        });
+        if (updateNameError) throw updateNameError;
+        setCurrentUser(displayName.trim());
       }
 
-      const { error } = await supabase.auth.updateUser(updates);
-      
-      if (error) throw error;
-
-      if (updates.data?.display_name) {
-        setCurrentUser(updates.data.display_name);
-      }
-
-      toast.success('Perfil atualizado com segurança');
+      toast.success(isChangingPassword ? 'Nome e password atualizados com segurança!' : 'Perfil atualizado com sucesso!');
       onClose();
     } catch (error: any) {
       console.error(error);
@@ -68,7 +81,7 @@ export default function ProfileSettingsModal({ onClose }: { onClose: () => void 
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fadeIn">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden flex flex-col">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden flex flex-col max-h-[90vh]">
         {/* Header */}
         <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
           <div className="flex items-center gap-3">
@@ -89,7 +102,7 @@ export default function ProfileSettingsModal({ onClose }: { onClose: () => void 
         </div>
 
         {/* Body */}
-        <div className="p-6 space-y-5">
+        <div className="p-6 space-y-5 overflow-y-auto">
           <div>
             <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2 flex items-center gap-2">
               <User className="w-4 h-4" /> Nome de Apresentação
@@ -118,22 +131,55 @@ export default function ProfileSettingsModal({ onClose }: { onClose: () => void 
             />
           </div>
 
-          <div className="pt-2">
-            <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2 flex items-center gap-2">
-              <Lock className="w-4 h-4" /> Nova Password
+          <div className="pt-2 border-t border-gray-100">
+            <label className="flex items-center gap-2 cursor-pointer group mb-4">
+              <input 
+                type="checkbox" 
+                checked={isChangingPassword}
+                onChange={(e) => setIsChangingPassword(e.target.checked)}
+                className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500 cursor-pointer"
+              />
+              <span className="text-sm font-bold text-gray-700 group-hover:text-blue-600 transition-colors flex items-center gap-1.5">
+                <KeyRound className="w-4 h-4" />
+                Quero alterar a minha password
+              </span>
             </label>
-            <input
-              type="password"
-              value={newPassword}
-              onChange={(e) => setNewPassword(e.target.value)}
-              placeholder="Deixar em branco para não alterar"
-              className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:bg-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all"
-            />
+
+            {isChangingPassword && (
+              <div className="space-y-4 bg-gray-50 p-4 rounded-xl border border-gray-200 animate-fadeIn">
+                <div>
+                  <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5 flex items-center gap-2">
+                    <Lock className="w-4 h-4" /> Password Atual
+                  </label>
+                  <input
+                    type="password"
+                    value={oldPassword}
+                    onChange={(e) => setOldPassword(e.target.value)}
+                    autoComplete="new-password"
+                    placeholder="Insira a password atual"
+                    className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-blue-600 uppercase tracking-wider mb-1.5 flex items-center gap-2">
+                    <Shield className="w-4 h-4" /> Nova Password
+                  </label>
+                  <input
+                    type="password"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    autoComplete="new-password"
+                    placeholder="Insira a nova password"
+                    className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all"
+                  />
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 border-t border-gray-100 bg-gray-50 flex justify-end gap-3">
+        <div className="px-6 py-4 border-t border-gray-100 bg-gray-50 flex justify-end gap-3 mt-auto">
           <button
             onClick={onClose}
             className="px-4 py-2 text-sm font-semibold text-gray-600 hover:bg-gray-200 rounded-xl transition-colors"
