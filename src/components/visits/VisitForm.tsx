@@ -4,8 +4,9 @@ import React, { useState, useEffect } from 'react';
 import { useApp } from '@/context/AppContext';
 import { VisitService } from '@/services/visitService';
 import { SiteVisit, VisitStatus } from '@/types';
-import { Check,  ArrowLeft, Save, MapPin, Phone, User, Calendar, Mail, FileText, CheckSquare  } from 'lucide-react';
+import { Printer,  Check,  ArrowLeft, Save, MapPin, Phone, User, Calendar, Mail, FileText, CheckSquare   } from 'lucide-react';
 import { toast } from 'sonner';
+import SiteVisitPdfPreview from '@/components/pdf/SiteVisitPdfPreview';
 
 const CHECKLIST_ITEMS = [
   { id: 'pe_direito', label: 'Medida Pé Direito' },
@@ -19,6 +20,7 @@ const CHECKLIST_ITEMS = [
 export default function VisitForm() {
   const { setCurrentView } = useApp();
   const [isSaving, setIsSaving] = useState(false);
+  const [showPdf, setShowPdf] = useState(false);
   const [formData, setFormData] = useState<Partial<SiteVisit>>({
     number: '',
     clientName: '',
@@ -107,6 +109,14 @@ export default function VisitForm() {
             <option value="Orcamentado">Orcamentado</option>
           </select>
 
+          <button
+            onClick={() => setShowPdf(true)}
+            className="flex items-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-700 px-5 py-2.5 rounded-lg font-bold text-sm transition border border-gray-300"
+          >
+            <Printer className="w-4 h-4" />
+            Imprimir Ficha
+          </button>
+          
           <button
             onClick={handleSave}
             disabled={isSaving}
@@ -232,6 +242,13 @@ export default function VisitForm() {
 
         </div>
       </div>
+
+      {showPdf && (
+        <SiteVisitPdfPreview 
+          visit={formData as SiteVisit} 
+          onClose={() => setShowPdf(false)} 
+        />
+      )}
     </div>
   );
 }
