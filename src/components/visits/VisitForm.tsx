@@ -8,10 +8,10 @@ import { ArrowLeft, Save, MapPin, Phone, User, Calendar, Mail, FileText, CheckSq
 import { toast } from 'sonner';
 
 const CHECKLIST_ITEMS = [
-  { id: 'pe_direito', label: 'Medida PAe Direito' },
-  { id: 'pe_direito_sanca', label: 'Medida PAe Drt./ Sanca' },
-  { id: 'tubos_esgotos', label: 'Verificar saAdas de tubos/esgotos' },
-  { id: 'eletricidade', label: 'Verificar saAdas de eletricidade/tomadas' },
+  { id: 'pe_direito', label: 'Medida Pé Direito' },
+  { id: 'pe_direito_sanca', label: 'Medida Pé Drt./ Sanca' },
+  { id: 'tubos_esgotos', label: 'Verificar saídas de tubos/esgotos' },
+  { id: 'eletricidade', label: 'Verificar saídas de eletricidade/tomadas' },
   { id: 'esquadria', label: 'Verificar esquadria de paredes/recortes' },
   { id: 'altura_janelas', label: 'Verificar altura das janelas' }
 ];
@@ -55,7 +55,7 @@ export default function VisitForm() {
 
   const handleSave = async () => {
     if (!formData.clientName) {
-      toast.error('O nome do cliente e obrigatorio.');
+      toast.error('O nome do cliente é obrigatório.');
       return;
     }
 
@@ -126,7 +126,7 @@ export default function VisitForm() {
           <section className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
             <h2 className="text-sm font-bold text-gray-900 mb-4 flex items-center gap-2">
               <User className="w-4 h-4 text-indigo-500" />
-              InformaCAes de Cliente & Projecto
+              Informações de Cliente & Projecto
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
               <div>
@@ -190,13 +190,13 @@ export default function VisitForm() {
           <section className="bg-[#b39b82]/10 p-6 rounded-xl border border-[#b39b82]/30 shadow-sm">
             <h2 className="text-sm font-bold text-[#8a7258] mb-4 flex items-center gap-2">
               <CheckSquare className="w-4 h-4" />
-              VerificaCAes TAcnicas
+              Verificações Técnicas
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-y-4 gap-x-6">
               {CHECKLIST_ITEMS.map(item => {
                 const isChecked = !!formData.checklist?.[item.id];
                 return (
-                  <label key={item.id} className="flex items-start gap-3 cursor-pointer group">
+                  <label key={item.id} className="flex items-start gap-3 cursor-pointer group" onClick={(e) => { e.preventDefault(); toggleChecklist(item.id); }}>
                     <div className={'mt-0.5 w-5 h-5 rounded border flex items-center justify-center transition-colors ' + (isChecked ? 'bg-[#b39b82] border-[#b39b82]' : 'bg-white border-gray-300 group-hover:border-[#b39b82]')}>
                       {isChecked && <div className="w-2.5 h-2.5 bg-white rounded-sm" />}
                     </div>
@@ -213,7 +213,7 @@ export default function VisitForm() {
           <section className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
             <h2 className="text-sm font-bold text-gray-900 mb-4 flex items-center gap-2">
               <FileText className="w-4 h-4 text-gray-400" />
-              Desenho p/ anAlise / Notas
+              Desenho p/ análise / Notas
             </h2>
             <div>
               <textarea
@@ -225,7 +225,7 @@ export default function VisitForm() {
                   backgroundImage: 'radial-gradient(#e5e7eb 1px, transparent 0)',
                   backgroundSize: '20px 20px'
                 }}
-                placeholder="Podes usar este espaAo para apontar medidas ou notas da obra..."
+                placeholder="Podes usar este espaço para apontar medidas ou notas da obra..."
               />
             </div>
           </section>

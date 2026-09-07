@@ -50,7 +50,7 @@ export default function VisitsView() {
     switch (status) {
       case 'Agendado': return 'bg-amber-100 text-amber-700 border-amber-200';
       case 'Realizado': return 'bg-blue-100 text-blue-700 border-blue-200';
-      case 'Orcamentado': return 'bg-emerald-100 text-emerald-700 border-emerald-200';
+      case 'Orçamentado': return 'bg-emerald-100 text-emerald-700 border-emerald-200';
       default: return 'bg-gray-100 text-gray-700 border-gray-200';
     }
   };
@@ -62,7 +62,7 @@ export default function VisitsView() {
         <div>
           <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Fichas de Obra</h1>
           <p className="text-sm text-gray-500 mt-1">
-            Gere todos os levantamentos, visitas e medicoses em obra.
+            Gere todos os levantamentos, visitas e medições em obra.
           </p>
         </div>
         
@@ -102,11 +102,11 @@ export default function VisitsView() {
           <table className="w-full text-left text-sm text-gray-600">
             <thead className="bg-gray-50/80 text-gray-500 border-b border-gray-200">
               <tr>
-                <th className="px-6 py-4 font-semibold w-32">N.O Obra</th>
+                <th className="px-6 py-4 font-semibold w-32">N.º Obra</th>
                 <th className="px-6 py-4 font-semibold">Cliente</th>
                 <th className="px-6 py-4 font-semibold">Data / Local</th>
                 <th className="px-6 py-4 font-semibold w-40 text-center">Estado</th>
-                <th className="px-6 py-4 font-semibold w-32 text-right">Acoes</th>
+                <th className="px-6 py-4 font-semibold w-32 text-right">Ações</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
@@ -119,7 +119,7 @@ export default function VisitsView() {
               ) : filtered.length === 0 ? (
                 <tr>
                   <td colSpan={5} className="px-6 py-12 text-center text-gray-500">
-                    {search ? 'Nenhuma visita encontrada.' : 'Ainda nao existem visitas de obra registadas.'}
+                    {search ? 'Nenhuma visita encontrada.' : 'Ainda não existem visitas de obra registadas.'}
                   </td>
                 </tr>
               ) : (
