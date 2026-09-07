@@ -12,7 +12,7 @@ export const VisitService = {
       if (error.message.includes('relation "public.site_visits" does not exist')) {
         return []; // Fallback gracefully if table not created yet
       }
-      throw new Error(\`Falha ao buscar visitas: \${error.message}\`);
+      throw new Error('Falha ao buscar visitas: ' + error.message);
     }
 
     return (data || []).map(this.mapFromDb);
@@ -47,7 +47,7 @@ export const VisitService = {
       .select('*')
       .single();
 
-    if (error) throw new Error(\`Falha ao guardar visita: \${error.message}\`);
+    if (error) throw new Error('Falha ao guardar visita: ' + error.message);
     
     return this.mapFromDb(data);
   },
@@ -58,7 +58,7 @@ export const VisitService = {
       .delete()
       .eq('id', id);
 
-    if (error) throw new Error(\`Falha ao apagar visita: \${error.message}\`);
+    if (error) throw new Error('Falha ao apagar visita: ' + error.message);
   },
 
   mapFromDb(row: any): SiteVisit {
