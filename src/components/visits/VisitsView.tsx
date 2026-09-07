@@ -50,7 +50,7 @@ export default function VisitsView() {
     switch (status) {
       case 'Agendado': return 'bg-amber-100 text-amber-700 border-amber-200';
       case 'Realizado': return 'bg-blue-100 text-blue-700 border-blue-200';
-      case 'Orçamentado': return 'bg-emerald-100 text-emerald-700 border-emerald-200';
+      case 'Orcamentado': return 'bg-emerald-100 text-emerald-700 border-emerald-200';
       default: return 'bg-gray-100 text-gray-700 border-gray-200';
     }
   };
@@ -150,7 +150,7 @@ export default function VisitsView() {
                     </td>
                     <td className="px-6 py-4 text-center">
                       <span className={'px-2.5 py-1 text-[11px] font-semibold border rounded-full ' + getStatusColor(visit.status)}>
-                        {visit.status}
+                        {visit.status === 'Orcamentado' ? 'Orçamentado' : visit.status}
                       </span>
                     </td>
                     <td className="px-6 py-4">
