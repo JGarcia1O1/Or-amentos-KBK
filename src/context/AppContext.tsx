@@ -422,55 +422,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
     fetchCatalog();
 
-    const interval = setInterval(async () => {
-      try {
-        // Prevent browser caching the check
-        const res = await fetch('/api/catalog/check?t=' + Date.now(), { cache: 'no-store' });
-        const data = await res.json();
-        
-        if (data.exists && data.excelMtime > 0) {
-          if (data.excelMtime > data.jsonMtime + 2000 && data.excelMtime > lastExcelMtime.current) {
-            
-            // Excel was modified! Get preview
-            const prevRes = await fetch('/api/catalog/preview?t=' + Date.now(), { cache: 'no-store' });
-            const previewData = await prevRes.json();
-            
-            if (previewData && previewData.materials) {
-              const checkDiff = (curr: any[] = [], next: any[] = [], field: string) => {
-                if (curr.length !== next.length) return true;
-                const currMap = new Map(curr.map(i => [i.code, i]));
-                for (const item of next) {
-                  const c = currMap.get(item.code);
-                  if (!c) return true;
-                  if (c[field] !== item[field] || c.name !== item.name) return true;
-                }
-                return false;
-              };
-
-              const hasDiffs = 
-                checkDiff(materials, previewData.materials, 'price') ||
-                checkDiff(hardware, previewData.hardware, 'price') ||
-                checkDiff(workstations, previewData.workstations, 'rate');
-
-              if (hasDiffs) {
-                if (userRole === 'admin') {
-                  setNewExcelCatalog(previewData);
-                  setIsDiffModalOpen(true);
-                } else if (userRole === 'gestor') {
-                  // Only warn gestor, don't open modal
-                  console.log('Excel foi alterado, aguardando aprovação do Admin.');
-                }
-              }
-            }
-            lastExcelMtime.current = data.excelMtime;
-          }
-        }
-      } catch (error) {
-        // quiet fail on polling
-      }
-    }, 5000); // Poll every 5s
-
-    return () => clearInterval(interval);
+    /* Polling do Excel removido para evitar excesso de pedidos na Vercel */
   }, []);
 
   // Ações de Clientes
