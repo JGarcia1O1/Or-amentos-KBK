@@ -141,7 +141,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setIsMounted(true);
   }, []);
 
-  const [currentView, setCurrentView] = useState<'quotes-list' | 'quote-editor' | 'clients' | 'materials' | 'settings'>('quotes-list');
+  const [currentView, setCurrentView] = useState<'quotes-list' | 'quote-editor' | 'clients' | 'materials' | 'settings' | 'emails'>('quotes-list');
   const [currentUser, setCurrentUser] = useState<string>('A Carregar...');
   const [userRole, setUserRole] = useState<UserRole>('admin');
 
