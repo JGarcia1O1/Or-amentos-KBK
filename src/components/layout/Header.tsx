@@ -10,6 +10,7 @@ import {
   Pencil,
   Sparkles,
   UserCircle2,
+  LogOut,
 } from 'lucide-react';
 import { UserRole } from '@/types';
 
@@ -21,7 +22,7 @@ export default function Header() {
     selectedQuote,
     openPdfPreview,
     userRole,
-    setUserRole,
+    setUserRole, currentUser,
   } = useApp();
 
   const [showDropdown, setShowDropdown] = useState(false);
@@ -83,18 +84,22 @@ export default function Header() {
       </div>
 
       <div className="flex items-center gap-3">
-        <div className="flex items-center gap-2 mr-4 border-r border-gray-200 pr-4">
-          <UserCircle2 className="w-4 h-4 text-gray-400" />
-          <select
-            value={userRole}
-            onChange={(e) => setUserRole(e.target.value as UserRole)}
-            className="text-xs font-semibold bg-gray-50 border border-gray-200 rounded-lg px-2 py-1 outline-none focus:border-blue-500 cursor-pointer"
-            title="Simulador de Perfis (RBAC)"
+        <div className="flex items-center gap-3 mr-4 border-r border-gray-200 pr-4">
+          <UserCircle2 className="w-5 h-5 text-gray-400" />
+          <span className="text-xs font-semibold text-gray-700">{currentUser}</span>
+          <button
+            onClick={() => {
+              import('@/lib/supabase').then(({ supabase }) => {
+                supabase.auth.signOut().then(() => {
+                  window.location.href = '/login';
+                });
+              });
+            }}
+            className="p-1.5 ml-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors flex items-center gap-1"
+            title="Terminar Sessão"
           >
-            <option value="admin">👨‍💼 Administrador</option>
-            <option value="gestor">🧑‍💻 Gestor</option>
-            <option value="trabalhador">👷‍♂️ Trabalhador</option>
-          </select>
+            <LogOut className="w-4 h-4" />
+          </button>
         </div>
 
         {currentView === 'quotes-list' && (

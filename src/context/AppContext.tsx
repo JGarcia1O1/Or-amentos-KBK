@@ -142,8 +142,34 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const [currentView, setCurrentView] = useState<'quotes-list' | 'quote-editor' | 'clients' | 'materials' | 'settings'>('quotes-list');
-  const [currentUser, setCurrentUser] = useState<string>('Departamento Comercial');
+  const [currentUser, setCurrentUser] = useState<string>('A Carregar...');
   const [userRole, setUserRole] = useState<UserRole>('admin');
+
+  useEffect(() => {
+    // Get initial session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user?.email) {
+        setCurrentUser(session.user.email);
+      } else {
+        setCurrentUser('Não autenticado');
+      }
+    });
+
+    // Listen for changes
+    const { data: authListener } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        if (session?.user?.email) {
+          setCurrentUser(session.user.email);
+        } else {
+          setCurrentUser('Não autenticado');
+        }
+      }
+    );
+
+    return () => {
+      authListener.subscription.unsubscribe();
+    };
+  }, []);
 
   const [pendingApprovals, setPendingApprovals] = useState<PendingApproval[]>(() => {
     if (typeof window !== 'undefined') {
