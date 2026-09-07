@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 import { X, User, Lock, Save, Shield, KeyRound } from 'lucide-react';
@@ -79,7 +80,7 @@ export default function ProfileSettingsModal({ onClose }: { onClose: () => void 
     }
   };
 
-  return (
+  const modalContent = (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fadeIn">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden flex flex-col max-h-[90vh]">
         {/* Header */}
@@ -202,4 +203,6 @@ export default function ProfileSettingsModal({ onClose }: { onClose: () => void 
       </div>
     </div>
   );
+
+  return typeof document !== 'undefined' ? createPortal(modalContent, document.body) : null;
 }
