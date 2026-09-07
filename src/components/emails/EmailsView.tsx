@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { Mail, Copy, Check, Info } from 'lucide-react';
-import toast from 'react-hot-toast';
+import { toast } from 'sonner';
 
 export default function EmailsView() {
   const [templateType, setTemplateType] = useState('1_aviso');
