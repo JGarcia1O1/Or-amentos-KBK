@@ -1,0 +1,98 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --font-jakarta: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont,
+    'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue',
+    sans-serif;
+}
+
+body {
+  font-family: var(--font-jakarta);
+  background-color: #f8fafc;
+  color: #0f172a;
+}
+
+/* ============================================================ */
+/* ESTILOS DE IMPRESSÃO VETORIAL DO PDF OFICIAL                */
+/* ============================================================ */
+@media print {
+  @page {
+    margin: 0mm; /* Remove os cabeçalhos chatos do browser (localhost, data, etc) */
+    size: A4 portrait;
+  }
+
+  body * {
+    visibility: hidden;
+  }
+
+  html, body {
+    height: auto !important;
+    overflow: visible !important;
+    background: #ffffff !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  #pdf-printable-area,
+  #pdf-printable-area * {
+    visibility: visible;
+  }
+
+  /* Os parentes com position: fixed ou relative criam blocos que cortam o position: absolute. 
+     Temos de os libertar para que a página expanda corretamente ao infinito! */
+  .fixed.inset-0.z-50 {
+    position: static !important;
+    display: block !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+  .max-h-\\[95vh\\],
+  .overflow-hidden {
+    max-height: none !important;
+    overflow: visible !important;
+  }
+
+  #pdf-printable-area {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    margin: 0;
+    padding: 0 15mm !important; /* Margens laterais. Top/Bottom geridos pelo thead/tfoot */
+    background: #ffffff !important;
+    overflow: visible !important;
+    height: auto !important;
+    max-height: none !important;
+    box-shadow: none !important;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+
+  .page-break {
+    page-break-before: always;
+    break-before: page;
+  }
+
+  /* Evitar cortes a meio das linhas da tabela */
+  table {
+    page-break-inside: auto;
+    width: 100%;
+  }
+  tr {
+    page-break-inside: avoid;
+    page-break-after: auto;
+    break-inside: avoid;
+  }
+  thead {
+    display: table-header-group; /* Repete cabeçalho em páginas novas */
+  }
+  tfoot {
+    display: table-footer-group;
+  }
+}

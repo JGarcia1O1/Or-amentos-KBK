@@ -1,0 +1,1418 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>KUBIK HOME - Plataforma de Orçamentos</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Lucide Icons CDN -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Vue 3 CDN for complete reactivity -->
+  <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              50: '#f8fafc',
+              100: '#f1f5f9',
+              800: '#1e293b',
+              900: '#0f172a',
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    body { font-family: 'Plus Jakarta Sans', sans-serif; }
+    [v-cloak] { display: none; }
+    
+    /* Print styles to replicate official 2-page PDF */
+    @media print {
+      body * {
+        visibility: hidden;
+      }
+      #pdf-printable-area, #pdf-printable-area * {
+        visibility: visible;
+      }
+      #pdf-printable-area {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        margin: 0;
+        padding: 0;
+      }
+      .no-print {
+        display: none !important;
+      }
+      .page-break {
+        page-break-before: always;
+        break-before: page;
+      }
+    }
+  </style>
+</head>
+<body class="bg-gray-50 text-gray-900 antialiased h-screen overflow-hidden">
+
+<div id="app" v-cloak class="flex h-full w-full">
+
+  <!-- ========================================== -->
+  <!-- 1. SIDEBAR (Estilo Operum / Minimalista)   -->
+  <!-- ========================================== -->
+  <aside class="w-64 bg-white border-r border-gray-200 flex flex-col justify-between flex-shrink-0 select-none z-20">
+    
+    <!-- Topo da Sidebar -->
+    <div>
+      <!-- Seletor de Organização / Empresa -->
+      <div class="p-4 border-b border-gray-100">
+        <div class="flex items-center gap-3 p-2 rounded-xl bg-gray-50 border border-gray-100">
+          <div class="w-9 h-9 rounded-lg bg-black text-white flex items-center justify-center font-bold text-base shadow-sm">
+            K
+          </div>
+          <div class="flex-1 min-w-0">
+            <h2 class="text-xs font-bold text-gray-900 uppercase tracking-wider truncate">KUBIK HOME</h2>
+            <p class="text-[11px] text-gray-400 truncate">Tortosendo - Portugal</p>
+          </div>
+          <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+        </div>
+      </div>
+
+      <!-- Navegação de Módulos -->
+      <nav class="p-3 space-y-1">
+        <div class="px-3 py-1.5 text-[10px] font-bold text-gray-400 uppercase tracking-wider">Módulos Ativos</div>
+
+        <!-- Módulo Orçamentos -->
+        <button 
+          @click="currentView = 'quotes-list'; selectedQuote = null"
+          :class="currentView.startsWith('quote') ? 'bg-gray-900 text-white font-medium shadow-sm' : 'text-gray-600 hover:bg-gray-100'"
+          class="w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs transition-colors">
+          <div class="flex items-center gap-2.5">
+            <i data-lucide="file-spreadsheet" class="w-4 h-4"></i>
+            <span>Orçamentos</span>
+          </div>
+          <span :class="currentView.startsWith('quote') ? 'bg-gray-800 text-gray-300' : 'bg-gray-100 text-gray-600'" class="text-[10px] px-2 py-0.5 rounded-full font-semibold">
+            {{ quotes.length }}
+          </span>
+        </button>
+
+        <!-- Módulo Clientes -->
+        <button 
+          @click="currentView = 'clients'"
+          :class="currentView === 'clients' ? 'bg-gray-900 text-white font-medium shadow-sm' : 'text-gray-600 hover:bg-gray-100'"
+          class="w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs transition-colors">
+          <div class="flex items-center gap-2.5">
+            <i data-lucide="users" class="w-4 h-4"></i>
+            <span>Clientes</span>
+          </div>
+          <span class="text-[10px] bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full font-semibold">{{ clients.length }}</span>
+        </button>
+
+        <!-- Módulo Chapas & Materiais -->
+        <button 
+          @click="currentView = 'materials'"
+          :class="currentView === 'materials' ? 'bg-gray-900 text-white font-medium shadow-sm' : 'text-gray-600 hover:bg-gray-100'"
+          class="w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs transition-colors">
+          <div class="flex items-center gap-2.5">
+            <i data-lucide="layers" class="w-4 h-4"></i>
+            <span>Chapas & Materiais</span>
+          </div>
+          <span class="text-[10px] bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full font-semibold">{{ materials.length }}</span>
+        </button>
+
+        <!-- Configurações de Máquinas e Termos -->
+        <button 
+          @click="currentView = 'settings'"
+          :class="currentView === 'settings' ? 'bg-gray-900 text-white font-medium shadow-sm' : 'text-gray-600 hover:bg-gray-100'"
+          class="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs transition-colors">
+          <i data-lucide="sliders" class="w-4 h-4"></i>
+          <span>Máquinas & Custos</span>
+        </button>
+
+        <!-- Separador de Módulos Futuros (Demonstração da Arquitetura Pluggable) -->
+        <div class="pt-4 px-3 py-1.5 text-[10px] font-bold text-gray-400 uppercase tracking-wider flex items-center justify-between">
+          <span>Próximos Módulos</span>
+          <span class="text-[9px] bg-amber-100 text-amber-700 px-1.5 py-0.2 rounded font-semibold">Modular</span>
+        </div>
+
+        <div class="opacity-50 space-y-0.5">
+          <div class="w-full flex items-center justify-between px-3 py-1.5 rounded-lg text-xs text-gray-400 cursor-not-allowed">
+            <div class="flex items-center gap-2.5">
+              <i data-lucide="factory" class="w-4 h-4"></i>
+              <span>Produção & Obras</span>
+            </div>
+            <span class="text-[9px] bg-gray-100 text-gray-400 px-1.5 py-0.5 rounded">Em Breve</span>
+          </div>
+          <div class="w-full flex items-center justify-between px-3 py-1.5 rounded-lg text-xs text-gray-400 cursor-not-allowed">
+            <div class="flex items-center gap-2.5">
+              <i data-lucide="package" class="w-4 h-4"></i>
+              <span>Stock & Encomendas</span>
+            </div>
+            <span class="text-[9px] bg-gray-100 text-gray-400 px-1.5 py-0.5 rounded">Em Breve</span>
+          </div>
+          <div class="w-full flex items-center justify-between px-3 py-1.5 rounded-lg text-xs text-gray-400 cursor-not-allowed">
+            <div class="flex items-center gap-2.5">
+              <i data-lucide="receipt" class="w-4 h-4"></i>
+              <span>Faturação</span>
+            </div>
+            <span class="text-[9px] bg-gray-100 text-gray-400 px-1.5 py-0.5 rounded">Em Breve</span>
+          </div>
+        </div>
+      </nav>
+    </div>
+
+    <!-- Rodapé da Sidebar (Troca de Utilizador Multi-User) -->
+    <div class="p-3 border-t border-gray-100 bg-gray-50/50">
+      <div class="text-[10px] font-bold text-gray-400 uppercase px-2 mb-1">Utilizador Ativo</div>
+      <div class="relative">
+        <select v-model="currentUser" class="w-full text-xs font-semibold bg-white border border-gray-200 rounded-lg p-2 focus:ring-1 focus:ring-black outline-none cursor-pointer">
+          <option value="Luís Cunha">Luís Cunha (Comercial)</option>
+          <option value="João Silva">João Silva (Comercial)</option>
+          <option value="Gerência">Gerência (Direção)</option>
+        </select>
+      </div>
+      <p class="text-[10px] text-gray-400 px-2 mt-1.5">3-4 utilizadores em tempo real</p>
+    </div>
+  </aside>
+
+
+  <!-- ========================================== -->
+  <!-- 2. ÁREA PRINCIPAL DE CONTEÚDO             -->
+  <!-- ========================================== -->
+  <main class="flex-1 flex flex-col min-w-0 bg-gray-50 overflow-y-auto">
+
+    <!-- TOPBAR FIXA -->
+    <header class="h-14 bg-white border-b border-gray-200 flex items-center justify-between px-6 flex-shrink-0">
+      <div class="flex items-center gap-3">
+        <span class="text-xs font-semibold text-gray-400">Plataforma</span>
+        <span class="text-gray-300">/</span>
+        <span class="text-xs font-bold text-gray-900 uppercase">
+          {{ currentView === 'quotes-list' ? 'Orçamentos de Projeto' : (currentView === 'quote-editor' ? 'Editor de Orçamento' : (currentView === 'clients' ? 'Ficheiro de Clientes' : 'Configurações de Produção')) }}
+        </span>
+      </div>
+
+      <div class="flex items-center gap-3">
+        <button 
+          v-if="currentView === 'quotes-list'"
+          @click="createNewQuote" 
+          class="inline-flex items-center gap-1.5 bg-black hover:bg-gray-800 text-white text-xs font-semibold px-3 py-1.5 rounded-lg shadow-sm transition-all">
+          <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+          <span>Novo Orçamento</span>
+        </button>
+
+        <button 
+          v-if="currentView === 'quote-editor'"
+          @click="openPdfPreview(selectedQuote)" 
+          class="inline-flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-3 py-1.5 rounded-lg shadow-sm transition-all">
+          <i data-lucide="printer" class="w-3.5 h-3.5"></i>
+          <span>Ver PDF Oficial</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- ========================================== -->
+    <!-- VIEW A: LISTA DE ORÇAMENTOS (DASHBOARD)    -->
+    <!-- ========================================== -->
+    <div v-if="currentView === 'quotes-list'" class="p-6 space-y-6">
+      
+      <!-- Cartões KPI de Topo -->
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+          <span class="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Total Orçado (Mês)</span>
+          <div class="text-xl font-bold text-gray-900 mt-1">{{ formatCurrency(totalQuotedAmount) }}</div>
+          <span class="text-[11px] text-emerald-600 font-semibold">4 Propostas Ativas</span>
+        </div>
+
+        <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+          <span class="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Adjudicados (€)</span>
+          <div class="text-xl font-bold text-emerald-600 mt-1">{{ formatCurrency(totalApprovedAmount) }}</div>
+          <span class="text-[11px] text-gray-500 font-medium">Taxa de sucesso: 50%</span>
+        </div>
+
+        <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+          <span class="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Custo Médio Produção</span>
+          <div class="text-xl font-bold text-gray-900 mt-1">{{ formatCurrency(averageCostAmount) }}</div>
+          <span class="text-[11px] text-gray-400 font-medium">Margem média: 54%</span>
+        </div>
+
+        <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+          <span class="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Responsável Ativo</span>
+          <div class="text-base font-bold text-gray-900 mt-1 truncate">{{ currentUser }}</div>
+          <span class="text-[11px] text-blue-600 font-medium">Sessão Segura</span>
+        </div>
+      </div>
+
+      <!-- Filtros e Barra de Pesquisa -->
+      <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div class="flex items-center gap-2 flex-1 max-w-md bg-gray-50 border border-gray-200 rounded-lg px-3 py-1.5 text-xs">
+          <i data-lucide="search" class="w-4 h-4 text-gray-400"></i>
+          <input v-model="searchQuery" type="text" placeholder="Pesquisar por cliente, número ou projeto..." class="bg-transparent w-full outline-none text-gray-700">
+        </div>
+
+        <div class="flex items-center gap-1 bg-gray-100 p-1 rounded-lg">
+          <button 
+            v-for="st in ['Todos', 'Apresentado', 'Adjudicado', 'Rascunho']" 
+            :key="st"
+            @click="filterStatus = st"
+            :class="filterStatus === st ? 'bg-white font-bold text-black shadow-xs' : 'text-gray-500 hover:text-black'"
+            class="px-3 py-1 rounded-md text-xs transition-all">
+            {{ st }}
+          </button>
+        </div>
+      </div>
+
+      <!-- Tabela dos Orçamentos (Dados Reais dos Teus 4 Ficheiros) -->
+      <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+        <table class="w-full text-left text-xs border-collapse">
+          <thead>
+            <tr class="bg-gray-50 border-b border-gray-200 text-gray-400 font-bold text-[10px] uppercase tracking-wider">
+              <th class="py-3 px-4">Nº Orçamento</th>
+              <th class="py-3 px-4">Cliente & Projeto</th>
+              <th class="py-3 px-4">Data</th>
+              <th class="py-3 px-4">Responsável</th>
+              <th class="py-3 px-4 text-right">Custo Est. (€)</th>
+              <th class="py-3 px-4 text-right">Sub-Total (€)</th>
+              <th class="py-3 px-4 text-right font-bold text-gray-900">Total c/ IVA</th>
+              <th class="py-3 px-4 text-center">Estado</th>
+              <th class="py-3 px-4 text-right">Ações</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-100">
+            <tr v-for="q in filteredQuotes" :key="q.id" class="hover:bg-gray-50/80 transition-colors">
+              <td class="py-3 px-4 font-bold text-gray-900 flex items-center gap-2">
+                <i data-lucide="file-text" class="w-3.5 h-3.5 text-gray-400"></i>
+                <span>{{ q.number }}</span>
+              </td>
+              <td class="py-3 px-4">
+                <div class="font-semibold text-gray-900">{{ q.clientName }}</div>
+                <div class="text-[11px] text-gray-400 truncate max-w-xs">{{ q.projectName || 'Obra Geral' }}</div>
+              </td>
+              <td class="py-3 px-4 text-gray-600">{{ q.date }}</td>
+              <td class="py-3 px-4 text-gray-600">{{ q.responsible }}</td>
+              <td class="py-3 px-4 text-right font-mono text-gray-500">{{ formatCurrency(calculateQuoteCost(q)) }}</td>
+              <td class="py-3 px-4 text-right font-mono text-gray-700">{{ formatCurrency(calculateQuoteSubtotal(q)) }}</td>
+              <td class="py-3 px-4 text-right font-mono font-bold text-gray-900">{{ formatCurrency(calculateQuoteTotalWithVat(q)) }}</td>
+              <td class="py-3 px-4 text-center">
+                <span 
+                  :class="{
+                    'bg-emerald-50 text-emerald-700 border-emerald-200': q.status === 'Adjudicado',
+                    'bg-blue-50 text-blue-700 border-blue-200': q.status === 'Apresentado',
+                    'bg-gray-100 text-gray-600 border-gray-200': q.status === 'Rascunho'
+                  }"
+                  class="px-2 py-0.5 rounded-full text-[10px] font-bold border">
+                  {{ q.status }}
+                </span>
+              </td>
+              <td class="py-3 px-4 text-right space-x-1 whitespace-nowrap">
+                <button 
+                  @click="editQuote(q)"
+                  class="p-1.5 hover:bg-gray-100 rounded text-gray-600 hover:text-black transition" title="Editar">
+                  <i data-lucide="pencil" class="w-3.5 h-3.5"></i>
+                </button>
+                <button 
+                  @click="openPdfPreview(q)"
+                  class="p-1.5 hover:bg-emerald-50 rounded text-emerald-600 hover:text-emerald-800 transition" title="Ver PDF Oficial">
+                  <i data-lucide="printer" class="w-3.5 h-3.5"></i>
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+
+    <!-- ========================================== -->
+    <!-- VIEW B: EDITOR DE ORÇAMENTO COMPLETO       -->
+    <!-- ========================================== -->
+    <div v-if="currentView === 'quote-editor' && selectedQuote" class="p-6 space-y-6 pb-28">
+      
+      <!-- Cabeçalho do Orçamento -->
+      <div class="bg-white p-5 rounded-xl border border-gray-200 shadow-sm space-y-4">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between border-b border-gray-100 pb-3 gap-2">
+          <div class="flex items-center gap-3">
+            <button @click="currentView = 'quotes-list'" class="text-gray-400 hover:text-black">
+              <i data-lucide="arrow-left" class="w-4 h-4"></i>
+            </button>
+            <h2 class="text-base font-bold text-gray-900">Orçamento nº {{ selectedQuote.number }}</h2>
+            <span class="text-xs bg-gray-100 text-gray-600 font-semibold px-2 py-0.5 rounded">COTAÇÃO DE PROJETO</span>
+          </div>
+
+          <div class="flex items-center gap-2">
+            <label class="text-xs text-gray-400 font-medium">Estado:</label>
+            <select v-model="selectedQuote.status" class="text-xs font-bold bg-gray-50 border border-gray-200 rounded-lg px-2.5 py-1 outline-none">
+              <option value="Rascunho">Rascunho</option>
+              <option value="Apresentado">Apresentado</option>
+              <option value="Adjudicado">Adjudicado (Aprovado)</option>
+              <option value="Recusado">Recusado</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Campos de Identificação -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 text-xs">
+          <div>
+            <label class="block text-gray-500 font-bold mb-1">Cliente</label>
+            <select v-model="selectedQuote.clientName" @change="onClientSelectChange" class="w-full bg-gray-50 border border-gray-200 rounded-lg p-2 font-semibold">
+              <option v-for="c in clients" :key="c.name" :value="c.name">{{ c.name }}</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-gray-500 font-bold mb-1">NIF do Cliente</label>
+            <input v-model="selectedQuote.clientNif" type="text" class="w-full bg-gray-50 border border-gray-200 rounded-lg p-2" placeholder="514...">
+          </div>
+
+          <div>
+            <label class="block text-gray-500 font-bold mb-1">Data Realização</label>
+            <input v-model="selectedQuote.date" type="text" class="w-full bg-gray-50 border border-gray-200 rounded-lg p-2">
+          </div>
+
+          <div>
+            <label class="block text-gray-500 font-bold mb-1">Responsável Comercial</label>
+            <input v-model="selectedQuote.responsible" type="text" class="w-full bg-gray-50 border border-gray-200 rounded-lg p-2">
+          </div>
+
+          <div class="md:col-span-2">
+            <label class="block text-gray-500 font-bold mb-1">Morada de Entrega / Obra</label>
+            <input v-model="selectedQuote.clientAddress" type="text" class="w-full bg-gray-50 border border-gray-200 rounded-lg p-2">
+          </div>
+
+          <div class="md:col-span-2">
+            <label class="block text-gray-500 font-bold mb-1">Nome do Projeto / Obra (Opcional)</label>
+            <input v-model="selectedQuote.projectName" type="text" class="w-full bg-gray-50 border border-gray-200 rounded-lg p-2" placeholder="Ex: Residência Boavista">
+          </div>
+        </div>
+      </div>
+
+      <!-- Tabela Hierárquica de Capítulos & Artigos -->
+      <div class="space-y-4">
+        <div v-for="(chap, cIdx) in selectedQuote.chapters" :key="chap.id" class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+          
+          <!-- Cabeçalho do Capítulo (ex: "1 Roupeiros", "2 Portas") -->
+          <div class="bg-gray-100/70 px-4 py-2.5 flex items-center justify-between border-b border-gray-200">
+            <div class="flex items-center gap-2 flex-1">
+              <span class="w-5 h-5 rounded-full bg-black text-white text-[10px] font-bold flex items-center justify-center">{{ cIdx + 1 }}</span>
+              <input v-model="chap.title" class="font-bold text-xs bg-transparent border-b border-dashed border-gray-400 focus:border-black outline-none px-1 text-gray-900 w-64" placeholder="Título do Capítulo">
+            </div>
+            <div class="flex items-center gap-2">
+              <button @click="addItemToChapter(chap)" class="text-xs text-blue-600 hover:text-blue-800 font-semibold flex items-center gap-1">
+                <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+                <span>Artigo</span>
+              </button>
+              <button @click="removeChapter(cIdx)" class="text-gray-400 hover:text-red-500 p-1">
+                <i data-lucide="trash" class="w-3.5 h-3.5"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- Tabela de Artigos do Capítulo -->
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs">
+              <thead class="bg-gray-50/50 text-gray-400 font-semibold text-[10px] uppercase border-b border-gray-100">
+                <tr>
+                  <th class="py-2 px-3 w-12">Art.</th>
+                  <th class="py-2 px-3">Designação Técnica do Móvel / Serviço</th>
+                  <th class="py-2 px-3 w-16 text-center">Un.</th>
+                  <th class="py-2 px-3 w-16 text-center">Qtd</th>
+                  <th class="py-2 px-3 w-28 text-right bg-amber-50/40 text-amber-800">Custo Unit (€)</th>
+                  <th class="py-2 px-3 w-20 text-center bg-amber-50/40 text-amber-800">Margem %</th>
+                  <th class="py-2 px-3 w-24 text-right bg-amber-50/40 text-amber-800">Extra (€)</th>
+                  <th class="py-2 px-3 w-28 text-right font-bold text-gray-800">Venda Unit (€)</th>
+                  <th class="py-2 px-3 w-28 text-right font-bold text-gray-900">Venda Total (€)</th>
+                  <th class="py-2 px-2 w-10 text-center"></th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-gray-100">
+                <tr v-for="(item, iIdx) in chap.items" :key="item.id" class="hover:bg-gray-50/50">
+                  <td class="py-2.5 px-3 font-mono font-bold text-gray-400 text-[11px]">{{ item.code }}</td>
+                  <td class="py-2.5 px-3">
+                    <textarea v-model="item.designation" rows="2" class="w-full bg-transparent border border-transparent hover:border-gray-200 focus:border-gray-300 focus:bg-white rounded p-1 text-xs outline-none resize-none font-medium text-gray-900" placeholder="Descrição do móvel, acabamentos e acessórios..."></textarea>
+                  </td>
+                  <td class="py-2.5 px-3 text-center">
+                    <input v-model="item.unit" class="w-10 text-center bg-transparent border-b border-gray-200 outline-none">
+                  </td>
+                  <td class="py-2.5 px-3 text-center">
+                    <input v-model.number="item.quantity" type="number" step="1" class="w-12 text-center bg-transparent font-bold border-b border-gray-200 outline-none">
+                  </td>
+                  
+                  <!-- Custo Unitário com Botão para Ficha Técnica -->
+                  <td class="py-2.5 px-3 text-right bg-amber-50/20">
+                    <div class="flex items-center justify-end gap-1">
+                      <button 
+                        @click="openTechnicalModal(item)"
+                        class="p-1 hover:bg-amber-100 text-amber-700 rounded transition" 
+                        title="Abrir Calculadora Técnica (Desdobramento Peça a Peça / Aparador)">
+                        <i data-lucide="calculator" class="w-3.5 h-3.5"></i>
+                      </button>
+                      <input v-model.number="item.costUnit" type="number" step="0.01" class="w-20 text-right font-mono font-semibold bg-white border border-gray-200 rounded px-1.5 py-0.5 outline-none focus:ring-1 focus:ring-amber-500">
+                    </div>
+                  </td>
+
+                  <!-- Margem Comercial -->
+                  <td class="py-2.5 px-3 text-center bg-amber-50/20">
+                    <div class="flex items-center justify-center gap-0.5">
+                      <input v-model.number="item.marginPercent" type="number" step="0.05" class="w-12 text-center font-mono font-bold bg-white border border-gray-200 rounded py-0.5 outline-none">
+                    </div>
+                  </td>
+
+                  <!-- Extra Montagem/Transporte -->
+                  <td class="py-2.5 px-3 text-right bg-amber-50/20">
+                    <input v-model.number="item.fixedExtra" type="number" step="10" class="w-16 text-right font-mono bg-white border border-gray-200 rounded px-1 py-0.5 outline-none">
+                  </td>
+
+                  <!-- Preço de Venda Unitário Calculado: Custo * (1 + Margem) + Extra -->
+                  <td class="py-2.5 px-3 text-right font-mono font-semibold text-gray-700">
+                    {{ formatCurrency(calculateItemSellUnit(item)) }}
+                  </td>
+
+                  <!-- Preço de Venda Total Calculado: Qtd * Preço Venda Unitário -->
+                  <td class="py-2.5 px-3 text-right font-mono font-bold text-gray-900">
+                    {{ formatCurrency(calculateItemSellTotal(item)) }}
+                  </td>
+
+                  <td class="py-2.5 px-2 text-center">
+                    <button @click="removeItemFromChapter(chap, iIdx)" class="text-gray-300 hover:text-red-500 transition">
+                      <i data-lucide="x" class="w-3.5 h-3.5"></i>
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Botão Adicionar Capítulo -->
+        <button @click="addChapter" class="w-full py-2.5 border-2 border-dashed border-gray-200 hover:border-black rounded-xl text-xs font-bold text-gray-500 hover:text-black transition flex items-center justify-center gap-2">
+          <i data-lucide="folder-plus" class="w-4 h-4"></i>
+          <span>Adicionar Novo Capítulo (ex: Cozinhas, Portas, Revestimentos)</span>
+        </button>
+      </div>
+
+      <!-- BARRA FLUTUANTE DE RENTABILIDADE E FECHO (Sticky Bottom Bar) -->
+      <div class="fixed bottom-0 right-0 left-64 bg-white/95 backdrop-blur border-t border-gray-200 p-4 shadow-lg flex flex-col md:flex-row items-center justify-between gap-4 z-10">
+        <!-- Indicadores Internos (Margem e Rentabilidade) -->
+        <div class="flex items-center gap-6 text-xs">
+          <div class="border-r border-gray-200 pr-4">
+            <span class="text-gray-400 font-semibold block text-[10px] uppercase">Custo Total Produção</span>
+            <span class="font-mono font-bold text-gray-800 text-sm">{{ formatCurrency(calculateQuoteCost(selectedQuote)) }}</span>
+          </div>
+
+          <div class="border-r border-gray-200 pr-4">
+            <span class="text-gray-400 font-semibold block text-[10px] uppercase">Margem Comercial Média</span>
+            <span class="font-mono font-bold text-emerald-600 text-sm">
+              {{ calculateQuoteMarginPercent(selectedQuote) }}% 
+              <span class="text-gray-500 font-normal text-xs">(+{{ formatCurrency(calculateQuoteSubtotal(selectedQuote) - calculateQuoteCost(selectedQuote)) }})</span>
+            </span>
+          </div>
+
+          <div class="border-r border-gray-200 pr-4">
+            <span class="text-gray-400 font-semibold block text-[10px] uppercase">Sub-Total (s/ IVA)</span>
+            <span class="font-mono font-bold text-gray-900 text-sm">{{ formatCurrency(calculateQuoteSubtotal(selectedQuote)) }}</span>
+          </div>
+
+          <div>
+            <span class="text-gray-400 font-semibold block text-[10px] uppercase">Total com IVA (23%)</span>
+            <span class="font-mono font-black text-black text-base">{{ formatCurrency(calculateQuoteTotalWithVat(selectedQuote)) }}</span>
+          </div>
+        </div>
+
+        <!-- Botões de Ação -->
+        <div class="flex items-center gap-2">
+          <button @click="currentView = 'quotes-list'" class="px-4 py-2 border border-gray-200 hover:bg-gray-50 rounded-lg text-xs font-semibold text-gray-700 transition">
+            Voltar
+          </button>
+          <button @click="openPdfPreview(selectedQuote)" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-semibold shadow-sm transition flex items-center gap-1.5">
+            <i data-lucide="file-check" class="w-3.5 h-3.5"></i>
+            <span>Gerar PDF Oficial KUBIK</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+
+    <!-- ========================================== -->
+    <!-- VIEW C: GESTÃO DE CLIENTES                 -->
+    <!-- ========================================== -->
+    <div v-if="currentView === 'clients'" class="p-6 space-y-6">
+      <div class="flex items-center justify-between">
+        <div>
+          <h2 class="text-lg font-bold text-gray-900">Base de Clientes</h2>
+          <p class="text-xs text-gray-500">Contactos e NIFs associados aos orçamentos</p>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div v-for="c in clients" :key="c.name" class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm space-y-2">
+          <div class="flex items-center justify-between">
+            <h3 class="font-bold text-sm text-gray-900">{{ c.name }}</h3>
+            <span class="text-[11px] font-mono bg-gray-100 px-2 py-0.5 rounded text-gray-600">NIF: {{ c.nif || 'Consumidor Final' }}</span>
+          </div>
+          <p class="text-xs text-gray-600 flex items-center gap-1.5"><i data-lucide="map-pin" class="w-3.5 h-3.5 text-gray-400"></i> {{ c.address || 'Sem morada registada' }}</p>
+          <div class="text-[11px] text-gray-400 flex items-center gap-4 pt-1">
+            <span>Email: {{ c.email || 'N/A' }}</span>
+            <span>Tel: {{ c.phone || 'N/A' }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+
+    <!-- ========================================== -->
+    <!-- VIEW D: CATÁLOGO DE MATERIAIS & CHAPAS     -->
+    <!-- ========================================== -->
+    <div v-if="currentView === 'materials'" class="p-6 space-y-6">
+      <div class="flex items-center justify-between">
+        <div>
+          <h2 class="text-lg font-bold text-gray-900">Catálogo de Chapas e Matérias-Primas</h2>
+          <p class="text-xs text-gray-500">Preços base usados no cálculo automático de rendimento de corte</p>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+        <table class="w-full text-left text-xs">
+          <thead class="bg-gray-50 text-gray-400 font-bold uppercase text-[10px]">
+            <tr>
+              <th class="py-3 px-4">Ref.</th>
+              <th class="py-3 px-4">Designação da Chapa</th>
+              <th class="py-3 px-4 text-center">Comprimento (mm)</th>
+              <th class="py-3 px-4 text-center">Largura (mm)</th>
+              <th class="py-3 px-4 text-center">Espessura</th>
+              <th class="py-3 px-4 text-right font-bold text-gray-900">Preço / Chapa (€)</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-100">
+            <tr v-for="m in materials" :key="m.code" class="hover:bg-gray-50">
+              <td class="py-3 px-4 font-mono font-bold text-gray-500">{{ m.code }}</td>
+              <td class="py-3 px-4 font-semibold text-gray-900">{{ m.name }}</td>
+              <td class="py-3 px-4 text-center font-mono">{{ m.length }} mm</td>
+              <td class="py-3 px-4 text-center font-mono">{{ m.width }} mm</td>
+              <td class="py-3 px-4 text-center font-mono">{{ m.thickness }} mm</td>
+              <td class="py-3 px-4 text-right font-mono font-bold text-gray-900">
+                <input v-model.number="m.price" type="number" step="0.5" class="w-20 text-right bg-gray-50 border border-gray-200 rounded p-1"> €
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+
+    <!-- ========================================== -->
+    <!-- VIEW E: MÁQUINAS & TAXAS HORÁRIAS          -->
+    <!-- ========================================== -->
+    <div v-if="currentView === 'settings'" class="p-6 space-y-6">
+      <div>
+        <h2 class="text-lg font-bold text-gray-900">Postos de Trabalho & Custos por Hora</h2>
+        <p class="text-xs text-gray-500">Valores por hora das máquinas e mão de obra utilizados na folha de cálculo</p>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div v-for="ws in workstations" :key="ws.code" class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm space-y-2">
+          <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider font-mono">{{ ws.code }}</span>
+          <h3 class="font-bold text-sm text-gray-900">{{ ws.name }}</h3>
+          <div class="pt-2 flex items-center justify-between">
+            <span class="text-xs text-gray-500">Custo Horário:</span>
+            <div class="flex items-center gap-1 font-mono font-bold text-gray-900 text-sm">
+              <input v-model.number="ws.rate" type="number" step="0.5" class="w-16 text-right bg-gray-50 border border-gray-200 rounded p-1">
+              <span>€/h</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+
+  <!-- ========================================================= -->
+  <!-- MODAL: CALCULADORA TÉCNICA DE PEÇAS (Aparador / Roupeiro) -->
+  <!-- ========================================================= -->
+  <div v-if="showTechnicalModal" class="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 z-50">
+    <div class="bg-white rounded-2xl border border-gray-200 shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden">
+      
+      <!-- Cabeçalho do Modal -->
+      <div class="p-4 bg-gray-900 text-white flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <i data-lucide="cpu" class="w-5 h-5 text-amber-400"></i>
+          <div>
+            <h3 class="font-bold text-sm">Calculadora de Custo Técnico de Produção</h3>
+            <p class="text-[11px] text-gray-400">Modelo fiel às fórmulas da folha "Aparador" (KUBIK HOME)</p>
+          </div>
+        </div>
+        <button @click="showTechnicalModal = false" class="text-gray-400 hover:text-white">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <!-- Corpo com as abas e cálculos -->
+      <div class="p-6 overflow-y-auto space-y-6 text-xs flex-1">
+        
+        <!-- 1. Medidas Gerais do Móvel -->
+        <div class="bg-gray-50 p-4 rounded-xl border border-gray-200 space-y-3">
+          <h4 class="font-bold text-gray-900 text-xs flex items-center gap-1.5">
+            <i data-lucide="ruler" class="w-4 h-4 text-blue-600"></i>
+            <span>1. Dimensões Globais do Móvel (mm)</span>
+          </h4>
+          <div class="grid grid-cols-2 sm:grid-cols-5 gap-3">
+            <div>
+              <label class="text-[11px] text-gray-500 font-semibold">Altura (mm)</label>
+              <input v-model.number="calcParams.height" type="number" class="w-full bg-white border border-gray-200 rounded p-1.5 font-bold font-mono">
+            </div>
+            <div>
+              <label class="text-[11px] text-gray-500 font-semibold">Largura (mm)</label>
+              <input v-model.number="calcParams.width" type="number" class="w-full bg-white border border-gray-200 rounded p-1.5 font-bold font-mono">
+            </div>
+            <div>
+              <label class="text-[11px] text-gray-500 font-semibold">Profundidade (mm)</label>
+              <input v-model.number="calcParams.depth" type="number" class="w-full bg-white border border-gray-200 rounded p-1.5 font-bold font-mono">
+            </div>
+            <div>
+              <label class="text-[11px] text-gray-500 font-semibold">Nº Portas</label>
+              <input v-model.number="calcParams.doors" type="number" class="w-full bg-white border border-gray-200 rounded p-1.5 font-bold font-mono">
+            </div>
+            <div>
+              <label class="text-[11px] text-gray-500 font-semibold">Nº Gavetas</label>
+              <input v-model.number="calcParams.drawers" type="number" class="w-full bg-white border border-gray-200 rounded p-1.5 font-bold font-mono">
+            </div>
+          </div>
+        </div>
+
+        <!-- 2. Tempos de Máquina e Mão de Obra -->
+        <div class="bg-gray-50 p-4 rounded-xl border border-gray-200 space-y-3">
+          <div class="flex items-center justify-between">
+            <h4 class="font-bold text-gray-900 text-xs flex items-center gap-1.5">
+              <i data-lucide="clock" class="w-4 h-4 text-amber-600"></i>
+              <span>2. Tempos de Operação e Setup de Máquina</span>
+            </h4>
+            <span class="font-mono font-bold text-gray-900">Total Operações: {{ formatCurrency(calcOperationsTotal) }}</span>
+          </div>
+
+          <table class="w-full text-left bg-white border border-gray-200 rounded-lg overflow-hidden">
+            <thead class="bg-gray-100 text-gray-500 text-[10px] uppercase font-bold">
+              <tr>
+                <th class="py-2 px-3">Posto</th>
+                <th class="py-2 px-3 text-center">Tempo Op. (min)</th>
+                <th class="py-2 px-3 text-center">Setup (min)</th>
+                <th class="py-2 px-3 text-right">Taxa (€/h)</th>
+                <th class="py-2 px-3 text-right">Op. Direta (€)</th>
+                <th class="py-2 px-3 text-right">Setup (€)</th>
+                <th class="py-2 px-3 text-right font-bold">Subtotal (€)</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100 font-mono">
+              <tr v-for="op in calcOperations" :key="op.code">
+                <td class="py-2 px-3 font-bold font-sans">{{ op.name }} ({{ op.code }})</td>
+                <td class="py-2 px-3 text-center">
+                  <input v-model.number="op.opMin" type="number" class="w-16 text-center bg-gray-50 border border-gray-200 rounded p-1">
+                </td>
+                <td class="py-2 px-3 text-center">
+                  <input v-model.number="op.setupMin" type="number" class="w-16 text-center bg-gray-50 border border-gray-200 rounded p-1">
+                </td>
+                <td class="py-2 px-3 text-right text-gray-500">{{ op.hourlyRate }} €</td>
+                <td class="py-2 px-3 text-right">{{ formatCurrency((op.opMin * op.hourlyRate) / 60) }}</td>
+                <td class="py-2 px-3 text-right">{{ formatCurrency((op.setupMin * op.hourlyRate) / 60) }}</td>
+                <td class="py-2 px-3 text-right font-bold text-gray-900">
+                  {{ formatCurrency(((op.opMin + op.setupMin) * op.hourlyRate) / 60) }}
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- 3. Lista de Peças e Rendimento de Chapas (Fórmula ROUNDDOWN do Excel) -->
+        <div class="bg-gray-50 p-4 rounded-xl border border-gray-200 space-y-3">
+          <div class="flex items-center justify-between">
+            <h4 class="font-bold text-gray-900 text-xs flex items-center gap-1.5">
+              <i data-lucide="box" class="w-4 h-4 text-emerald-600"></i>
+              <span>3. Rendimento e Otimização de Corte de Chapas</span>
+            </h4>
+            <span class="font-mono font-bold text-gray-900">Total Materiais: {{ formatCurrency(calcMaterialsTotal) }}</span>
+          </div>
+
+          <div class="flex items-center gap-3 bg-white p-2.5 rounded-lg border border-gray-200">
+            <span class="font-semibold text-gray-700">Chapa Selecionada:</span>
+            <select v-model="selectedCalcMaterialCode" class="bg-gray-50 border border-gray-200 rounded p-1 font-semibold">
+              <option v-for="m in materials" :key="m.code" :value="m.code">{{ m.name }} ({{ m.length }}x{{ m.width }}mm - {{ m.price }}€)</option>
+            </select>
+          </div>
+
+          <table class="w-full text-left bg-white border border-gray-200 rounded-lg overflow-hidden">
+            <thead class="bg-gray-100 text-gray-500 text-[10px] uppercase font-bold">
+              <tr>
+                <th class="py-2 px-3">Peça</th>
+                <th class="py-2 px-3 text-center">Comp (mm)</th>
+                <th class="py-2 px-3 text-center">Larg (mm)</th>
+                <th class="py-2 px-3 text-center">Qtd</th>
+                <th class="py-2 px-3 text-center">Rendimento (Pçs/Chapa)</th>
+                <th class="py-2 px-3 text-center">Utilização</th>
+                <th class="py-2 px-3 text-right font-bold">Valor Material (€)</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100 font-mono">
+              <tr v-for="part in calcParts" :key="part.name">
+                <td class="py-2 px-3 font-sans font-medium">{{ part.name }}</td>
+                <td class="py-2 px-3 text-center">
+                  <input v-model.number="part.length" type="number" class="w-16 text-center bg-gray-50 border border-gray-200 rounded p-1">
+                </td>
+                <td class="py-2 px-3 text-center">
+                  <input v-model.number="part.width" type="number" class="w-16 text-center bg-gray-50 border border-gray-200 rounded p-1">
+                </td>
+                <td class="py-2 px-3 text-center">
+                  <input v-model.number="part.qty" type="number" class="w-12 text-center bg-gray-50 border border-gray-200 rounded p-1 font-bold">
+                </td>
+                <!-- Fórmula MAX(ROUNDDOWN(X/Comp)*ROUNDDOWN(Y/Larg), ROUNDDOWN(X/Larg)*ROUNDDOWN(Y/Comp)) -->
+                <td class="py-2 px-3 text-center text-blue-700 font-bold">
+                  {{ calculatePartYield(part) }} pçs
+                </td>
+                <td class="py-2 px-3 text-center text-gray-600">
+                  {{ (part.qty / Math.max(1, calculatePartYield(part))).toFixed(2) }} ch
+                </td>
+                <td class="py-2 px-3 text-right font-bold text-gray-900">
+                  {{ formatCurrency((part.qty / Math.max(1, calculatePartYield(part))) * getActiveMaterialPrice()) }}
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+      </div>
+
+      <!-- Rodapé do Modal com Total Final e Botão de Aplicação -->
+      <div class="p-4 bg-gray-100 border-t border-gray-200 flex items-center justify-between">
+        <div class="flex items-center gap-4">
+          <div>
+            <span class="text-gray-400 text-[10px] uppercase font-bold block">Custo Total Calculado</span>
+            <span class="text-xl font-black font-mono text-gray-900">{{ formatCurrency(calcGrandTotal) }}</span>
+          </div>
+          <span class="text-xs text-gray-500 font-medium">Inclui mão de obra, chapas, corte e orlas.</span>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <button @click="showTechnicalModal = false" class="px-4 py-2 bg-white border border-gray-300 rounded-lg text-xs font-semibold text-gray-700 hover:bg-gray-50">
+            Cancelar
+          </button>
+          <button @click="applyCalculatedCostToItem" class="px-4 py-2 bg-black text-white rounded-lg text-xs font-semibold hover:bg-gray-800 shadow-sm flex items-center gap-1.5">
+            <i data-lucide="check" class="w-3.5 h-3.5"></i>
+            <span>Aplicar Custo ao Artigo ({{ formatCurrency(calcGrandTotal) }})</span>
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+
+  <!-- ========================================================= -->
+  <!-- MODAL: PRÉ-VISUALIZAÇÃO DO PDF OFICIAL (KUBIK HOME)       -->
+  <!-- ========================================================= -->
+  <div v-if="showPdfModal && pdfQuote" class="fixed inset-0 bg-black/70 backdrop-blur-xs flex items-center justify-center p-4 z-50 overflow-y-auto">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-3xl w-full my-8 flex flex-col overflow-hidden max-h-[95vh]">
+      
+      <!-- Barra Superior do Modal de PDF -->
+      <div class="p-3.5 bg-gray-900 text-white flex items-center justify-between no-print">
+        <div class="flex items-center gap-2 text-xs">
+          <i data-lucide="file-check" class="w-4 h-4 text-emerald-400"></i>
+          <span class="font-bold">Pré-visualização da Proposta Oficial KUBIK HOME</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <button @click="triggerPrint" class="bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 shadow-sm">
+            <i data-lucide="printer" class="w-3.5 h-3.5"></i>
+            <span>Imprimir / Guardar PDF</span>
+          </button>
+          <button @click="showPdfModal = false" class="text-gray-400 hover:text-white p-1">
+            <i data-lucide="x" class="w-5 h-5"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- DOCUMENTO IMPRIMÍVEL (Folha 1 + Folha 2) -->
+      <div id="pdf-printable-area" class="p-8 bg-white overflow-y-auto space-y-12 font-sans text-xs text-gray-900 leading-normal">
+        
+        <!-- ==================== PÁGINA 1: ROSTO ==================== -->
+        <div class="space-y-6">
+          <!-- Cabeçalho com Logótipo e Título -->
+          <div class="flex items-start justify-between border-b border-gray-300 pb-4">
+            <div>
+              <img src="logo_kubik.png" alt="KUBIK HOME" class="h-14 object-contain">
+            </div>
+            <div class="text-right">
+              <h1 class="text-base font-extrabold text-gray-900 tracking-wider">COTAÇÃO DE PROJETO</h1>
+              <div class="mt-1 text-xs font-bold text-gray-800">Orçamento: {{ pdfQuote.number }}</div>
+              <div class="text-[11px] text-gray-500">Data: {{ pdfQuote.date }}</div>
+              <div class="text-[11px] text-gray-500">Responsável: {{ pdfQuote.responsible }}</div>
+            </div>
+          </div>
+
+          <!-- Caixa de Dados do Cliente -->
+          <div class="border border-gray-300 rounded p-3 text-[11px] space-y-1 bg-gray-50/50">
+            <div class="font-bold text-gray-900 uppercase text-[10px] tracking-wider mb-1">Dados do Cliente</div>
+            <div class="grid grid-cols-2 gap-2">
+              <div><span class="font-bold">Nome:</span> {{ pdfQuote.clientName }}</div>
+              <div><span class="font-bold">NIF:</span> {{ pdfQuote.clientNif || '999999990' }}</div>
+              <div class="col-span-2"><span class="font-bold">Morada:</span> {{ pdfQuote.clientAddress || 'Portugal' }}</div>
+              <div v-if="pdfQuote.projectName" class="col-span-2 text-blue-800 font-semibold"><span class="font-bold">Projeto / Obra:</span> {{ pdfQuote.projectName }}</div>
+            </div>
+          </div>
+
+          <!-- Tabela de Artigos (Apenas Preços de Venda ao Cliente!) -->
+          <table class="w-full text-left text-xs border border-gray-300">
+            <thead>
+              <tr class="bg-gray-100 text-gray-700 font-bold border-b border-gray-300 text-[10px] uppercase">
+                <th class="py-2 px-2 w-12 text-center border-r border-gray-300">Art.</th>
+                <th class="py-2 px-3 border-r border-gray-300">Designação</th>
+                <th class="py-2 px-2 w-12 text-center border-r border-gray-300">Un.</th>
+                <th class="py-2 px-2 w-12 text-center border-r border-gray-300">Qtd</th>
+                <th class="py-2 px-3 w-28 text-right border-r border-gray-300">Preço Venda Unit.</th>
+                <th class="py-2 px-3 w-28 text-right">Preço Venda Total</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-200">
+              <template v-for="chap in pdfQuote.chapters" :key="chap.id">
+                <!-- Linha de Capítulo (ex: "1 Roupeiros") -->
+                <tr class="bg-gray-50 font-bold text-gray-900 border-t border-b border-gray-300">
+                  <td class="py-1 px-2 text-center border-r border-gray-300">{{ chap.id }}</td>
+                  <td colspan="5" class="py-1 px-3 uppercase tracking-wider text-[11px]">{{ chap.title }}</td>
+                </tr>
+                <!-- Linhas dos Artigos -->
+                <tr v-for="item in chap.items" :key="item.id">
+                  <td class="py-2 px-2 text-center font-mono border-r border-gray-300 text-[10px]">{{ item.code }}</td>
+                  <td class="py-2 px-3 border-r border-gray-300 text-[11px] whitespace-pre-line">{{ item.designation }}</td>
+                  <td class="py-2 px-2 text-center border-r border-gray-300 text-[10px]">{{ item.unit }}</td>
+                  <td class="py-2 px-2 text-center font-bold border-r border-gray-300">{{ item.quantity }}</td>
+                  <td class="py-2 px-3 text-right font-mono border-r border-gray-300">{{ formatCurrency(calculateItemSellUnit(item)) }}</td>
+                  <td class="py-2 px-3 text-right font-mono font-bold">{{ formatCurrency(calculateItemSellTotal(item)) }}</td>
+                </tr>
+              </template>
+            </tbody>
+          </table>
+
+          <!-- Totais da Folha 1 -->
+          <div class="flex justify-end">
+            <div class="w-72 border border-gray-300 rounded p-3 space-y-1.5 text-right font-mono text-xs bg-gray-50/50">
+              <div class="flex justify-between text-gray-600">
+                <span>Sub-Total:</span>
+                <span class="font-bold text-gray-900">{{ formatCurrency(calculateQuoteSubtotal(pdfQuote)) }}</span>
+              </div>
+              <div class="flex justify-between text-gray-600">
+                <span>Valor Final da Proposta:</span>
+                <span class="font-bold text-gray-900">{{ formatCurrency(calculateQuoteSubtotal(pdfQuote)) }}</span>
+              </div>
+              <div class="flex justify-between border-t border-gray-300 pt-1.5 text-sm font-bold text-black">
+                <span>Total com IVA (23%):</span>
+                <span>{{ formatCurrency(calculateQuoteTotalWithVat(pdfQuote)) }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Rodapé Institucional da Página 1 -->
+          <div class="pt-8 text-center text-[9px] text-gray-400 border-t border-gray-200">
+            Zona Industrial do Tortosendo, Rua E, Lote 41 | 6200-823 Tortosendo - PORTUGAL | NIF: 519021916 | TELEF: 275 957 250 | www.kubikhome.com
+            <div class="mt-1 font-semibold">Página 1 de 2</div>
+          </div>
+        </div>
+
+        <!-- ==================== PÁGINA 2: CONDIÇÕES GERAIS ==================== -->
+        <div class="page-break pt-8 space-y-4 text-[10px] text-gray-700 leading-relaxed">
+          <div class="text-center font-bold text-xs uppercase text-gray-900 border-b border-gray-300 pb-2">
+            CONDIÇÕES GERAIS DE VENDA
+          </div>
+
+          <div class="space-y-3">
+            <div>
+              <span class="font-bold text-gray-900">Condições de pagamento:</span> 50% na adjudicação, restantes 50% com finalização dos trabalhos.<br>
+              <span class="font-mono font-semibold text-gray-900">IBAN Bankinter: PT50 0269 0343 0020 5777 6028 3</span><br>
+              Os valores indicados poderão sofrer alterações como consequência da conjuntura mundial, pelo que poderá haver revisão de preços antes da execução da obra.
+            </div>
+
+            <div>
+              <span class="font-bold text-gray-900">Prazos de entrega:</span> A ser acordado após adjudicação.
+            </div>
+
+            <div>
+              <span class="font-bold text-gray-900">Validade do Orçamento:</span> Este orçamento tem uma validade de 30 dias a partir da data da sua apresentação. Findo este prazo, o orçamento deverá ser revisto pelo nosso Departamento Comercial.
+            </div>
+
+            <div>
+              <span class="font-bold text-gray-900">Transporte e Montagem:</span> O transporte é por nossa conta e risco quando assim acordado com o cliente. As montagens serão efetuadas de acordo com as boas práticas e diretrizes dos fabricantes.
+            </div>
+
+            <div>
+              <span class="font-bold text-gray-900">Reclamações & Reserva de Propriedade:</span> As reclamações deverão ser apresentadas num período de 5 dias após a data de entrega. A venda com pagamento diferido é realizada sob reserva de propriedade até ao pagamento integral.
+            </div>
+
+            <div>
+              <span class="font-bold text-gray-900">Jurisdição:</span> Para eventual situação de litígio, é exclusivamente competente o tribunal da comarca da Covilhã, PORTUGAL.
+            </div>
+          </div>
+
+          <!-- Campos de Assinatura -->
+          <div class="pt-12 grid grid-cols-3 gap-6 text-center text-[10px]">
+            <div class="border-t border-gray-400 pt-2 font-semibold">Comercial</div>
+            <div class="border-t border-gray-400 pt-2 font-semibold">Gerência</div>
+            <div class="border-t border-gray-400 pt-2 font-semibold">Cliente (Orçamento Aceite)</div>
+          </div>
+
+          <div class="text-right text-[9px] text-gray-400 pt-8">
+            Página 2 de 2
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+
+</div>
+
+<!-- Script Vue 3 com Todos os Dados e Fórmulas Reais -->
+<script>
+  const { createApp, ref, computed, onMounted, nextTick } = Vue;
+
+  createApp({
+    setup() {
+      const currentView = ref('quotes-list');
+      const currentUser = ref('Luís Cunha');
+      const searchQuery = ref('');
+      const filterStatus = ref('Todos');
+
+      // 4 Clientes Reais extraídos dos teus ficheiros
+      const clients = ref([
+        { name: 'Ricardo Estrela', nif: '', address: '', email: '', phone: '' },
+        { name: 'Atelier Vasco Pinho', nif: '', address: 'Moradia Ruben', email: '', phone: '' },
+        { name: 'Luisa Pimentel', nif: '', address: '', email: '', phone: '' },
+        { name: 'Now Xxi - Engenharia & Construções, S.A', nif: '514288256', address: 'Rua Poeta Bocage, 13 C 1600-581 Lisboa', email: '', phone: '' }
+      ]);
+
+      // Catálogo Real de Chapas e Preços extraídos dos ficheiros
+      const materials = ref([
+        { code: '502114', name: 'Linho 19mm', length: 2500, width: 1830, thickness: 19, price: 45.00 },
+        { code: '502295', name: 'Linho 8mm', length: 2800, width: 2070, thickness: 8, price: 38.00 },
+        { code: '502294', name: 'Linho 16mm', length: 2800, width: 2070, thickness: 16, price: 42.00 },
+        { code: '502999', name: 'Branco MA 19mm', length: 2800, width: 2070, thickness: 19, price: 53.90 },
+        { code: '503001', name: 'MDF Cru 16mm', length: 2800, width: 2070, thickness: 16, price: 35.00 }
+      ]);
+
+      // Postos de Trabalho e Taxas Horárias Reais do Excel
+      const workstations = ref([
+        { code: 'SH', name: 'Seccionadora (Corte)', rate: 35.00 },
+        { code: 'CNC', name: 'Centro Maquinação CNC', rate: 18.09 },
+        { code: 'ORLADORA', name: 'Orladora (Colagem)', rate: 25.00 },
+        { code: 'MANUAL', name: 'Montagem Bancada', rate: 25.00 }
+      ]);
+
+      // 4 Orçamentos Reais extraídos dos teus ficheiros
+      const quotes = ref([
+        {
+          id: 'q-009',
+          number: '2026-009',
+          clientName: 'Ricardo Estrela',
+          clientNif: '',
+          clientAddress: '',
+          date: '07/01/2026',
+          responsible: 'Luís Cunha',
+          projectName: 'Moradia Familiar',
+          status: 'Apresentado',
+          chapters: [
+            {
+              id: 1,
+              title: 'Roupeiros',
+              items: [
+                { id: '1.1', code: '1.1', designation: 'Closet (2359+1733)x2725mm l Interior em Linho Cancun l 5 Gavetas l Varões l Porta Joias com tampo em vidro', unit: 'un', quantity: 1, costUnit: 1257.50, marginPercent: 0.60, fixedExtra: 200.00 },
+                { id: '1.2', code: '2.2', designation: 'Roupeiro assutado 5512x1200mm em melamina Branca e portas lacadas a Branco', unit: 'un', quantity: 1, costUnit: 1056.00, marginPercent: 0.60, fixedExtra: 0.00 }
+              ]
+            }
+          ]
+        },
+        {
+          id: 'q-056',
+          number: '2026-056',
+          clientName: 'Atelier Vasco Pinho',
+          clientNif: '',
+          clientAddress: 'Moradia Ruben',
+          date: '02/03/2026',
+          responsible: 'Luís Cunha',
+          projectName: 'Moradia Ruben',
+          status: 'Adjudicado',
+          chapters: [
+            {
+              id: 1,
+              title: 'Portas',
+              items: [
+                { id: '1.1', code: '1.1', designation: 'Porta de correr CPL Branca 2000x900mm', unit: 'un', quantity: 4, costUnit: 180.00, marginPercent: 0.40, fixedExtra: 50.00 },
+                { id: '1.2', code: '1.2', designation: 'Porta em CPL Branca 2000x800mm', unit: 'un', quantity: 4, costUnit: 180.00, marginPercent: 0.40, fixedExtra: 50.00 }
+              ]
+            }
+          ]
+        },
+        {
+          id: 'q-158',
+          number: '2026-158',
+          clientName: 'Luisa Pimentel',
+          clientNif: '',
+          clientAddress: '',
+          date: '15/06/2026',
+          responsible: 'Luís Cunha',
+          projectName: '',
+          status: 'Apresentado',
+          chapters: [
+            {
+              id: 1,
+              title: 'Mob Diverso',
+              items: [
+                { id: '1.1', code: '1.1', designation: 'Lambrim em MDF e Moldura 5370x980mm', unit: 'un', quantity: 1, costUnit: 473.63, marginPercent: 0.60, fixedExtra: 250.00 }
+              ]
+            },
+            {
+              id: 2,
+              title: 'Portas',
+              items: [
+                { id: '2.1', code: '2.1', designation: 'Porta de correr 2000x820x17mm CPL Branco', unit: 'un', quantity: 1, costUnit: 220.00, marginPercent: 0.60, fixedExtra: 50.00 },
+                { id: '2.2', code: '2.2', designation: 'Porta de correr 2000x700x150mm CPL Branco', unit: 'un', quantity: 1, costUnit: 220.00, marginPercent: 0.60, fixedExtra: 50.00 }
+              ]
+            }
+          ]
+        },
+        {
+          id: 'q-171',
+          number: '2026-171',
+          clientName: 'Now Xxi - Engenharia & Construções, S.A',
+          clientNif: '514288256',
+          clientAddress: 'Rua Poeta Bocage, 13 C 1600-581 Lisboa',
+          date: '24/06/2026',
+          responsible: 'Luís Cunha',
+          projectName: 'Residência da Boavista',
+          status: 'Adjudicado',
+          chapters: [
+            {
+              id: 1,
+              title: 'Mob. Diverso',
+              items: [
+                { id: '1.1', code: '1.1', designation: 'Balcão copa em Termolaminado Branco Brilho e Melamina Preta l Interior em aglomerado revestido a melamina cinza l 2 gavetas l 1 gavetão', unit: 'un', quantity: 1, costUnit: 2870.00, marginPercent: 0.70, fixedExtra: 500.00 },
+                { id: '1.2', code: '1.2', designation: 'Bancada em Merino Marquina Marble', unit: 'un', quantity: 1, costUnit: 1800.00, marginPercent: 0.70, fixedExtra: 0.00 },
+                { id: '1.3', code: '1.3', designation: 'Lava-louça Rodi Inox', unit: 'un', quantity: 1, costUnit: 125.00, marginPercent: 0.40, fixedExtra: 0.00 },
+                { id: '1.4', code: '1.4', designation: 'Misturadora Rodi Line MN807', unit: 'un', quantity: 1, costUnit: 150.00, marginPercent: 0.40, fixedExtra: 0.00 }
+              ]
+            }
+          ]
+        }
+      ]);
+
+      const selectedQuote = ref(null);
+      const showPdfModal = ref(false);
+      const pdfQuote = ref(null);
+
+      // Variáveis do Modal Técnico
+      const showTechnicalModal = ref(false);
+      const activeEditingItem = ref(null);
+      const selectedCalcMaterialCode = ref('502114');
+
+      const calcParams = ref({
+        height: 2450,
+        width: 2790,
+        depth: 600,
+        doors: 3,
+        drawers: 4
+      });
+
+      const calcOperations = ref([
+        { code: 'SH', name: 'Seccionadora', opMin: 120, setupMin: 30, hourlyRate: 35.00 },
+        { code: 'CNC', name: 'Centro CNC', opMin: 120, setupMin: 45, hourlyRate: 18.09 },
+        { code: 'ORLADORA', name: 'Orladora', opMin: 120, setupMin: 30, hourlyRate: 25.00 },
+        { code: 'MANUAL', name: 'Montagem Bancada', opMin: 180, setupMin: 10, hourlyRate: 25.00 }
+      ]);
+
+      const calcParts = ref([
+        { name: 'Costa Frente', length: 1125, width: 1538, qty: 2 },
+        { name: 'Lateral', length: 1125, width: 480, qty: 4 },
+        { name: 'Lat Gaveta', length: 200, width: 480, qty: 6 },
+        { name: 'Costa/Frente Gaveta', length: 500, width: 200, qty: 6 }
+      ]);
+
+      // FÓRMULAS E CÁLCULOS
+
+      function calculateItemSellUnit(item) {
+        return (item.costUnit * (1 + (item.marginPercent || 0))) + (item.fixedExtra || 0);
+      }
+
+      function calculateItemSellTotal(item) {
+        return item.quantity * calculateItemSellUnit(item);
+      }
+
+      function calculateQuoteCost(q) {
+        let total = 0;
+        if (!q || !q.chapters) return 0;
+        q.chapters.forEach(c => {
+          c.items.forEach(i => {
+            total += (i.costUnit || 0) * (i.quantity || 1);
+          });
+        });
+        return total;
+      }
+
+      function calculateQuoteSubtotal(q) {
+        let total = 0;
+        if (!q || !q.chapters) return 0;
+        q.chapters.forEach(c => {
+          c.items.forEach(i => {
+            total += calculateItemSellTotal(i);
+          });
+        });
+        return total;
+      }
+
+      function calculateQuoteTotalWithVat(q) {
+        return calculateQuoteSubtotal(q) * 1.23;
+      }
+
+      function calculateQuoteMarginPercent(q) {
+        const cost = calculateQuoteCost(q);
+        const sub = calculateQuoteSubtotal(q);
+        if (cost <= 0) return 0;
+        return (((sub - cost) / cost) * 100).toFixed(1);
+      }
+
+      // Cálculos da Calculadora Técnica (Espelho da folha Aparador)
+      function getActiveMaterial() {
+        return materials.value.find(m => m.code === selectedCalcMaterialCode.value) || materials.value[0];
+      }
+
+      function getActiveMaterialPrice() {
+        return getActiveMaterial().price;
+      }
+
+      // FÓRMULA EXCEL: Rendimento de corte
+      // =MAX(ROUNDDOWN(X/Comp,0)*ROUNDDOWN(Y/Larg,0), ROUNDDOWN(X/Larg,0)*ROUNDDOWN(Y/Comp,0))
+      function calculatePartYield(part) {
+        const mat = getActiveMaterial();
+        const x = mat.length;
+        const y = mat.width;
+        const c = part.length;
+        const l = part.width;
+
+        const option1 = Math.floor(x / c) * Math.floor(y / l);
+        const option2 = Math.floor(x / l) * Math.floor(y / c);
+        return Math.max(1, Math.max(option1, option2));
+      }
+
+      const calcOperationsTotal = computed(() => {
+        let total = 0;
+        calcOperations.value.forEach(op => {
+          total += ((op.opMin + op.setupMin) * op.hourlyRate) / 60;
+        });
+        return total;
+      });
+
+      const calcMaterialsTotal = computed(() => {
+        let total = 0;
+        const price = getActiveMaterialPrice();
+        calcParts.value.forEach(p => {
+          const yld = calculatePartYield(p);
+          const usage = p.qty / yld;
+          total += usage * price;
+        });
+        // Acréscimo de ferragens base + orla (espelho do Excel)
+        total += 78.04;
+        return total;
+      });
+
+      const calcGrandTotal = computed(() => {
+        return calcOperationsTotal.value + calcMaterialsTotal.value;
+      });
+
+      function openTechnicalModal(item) {
+        activeEditingItem.value = item;
+        showTechnicalModal.value = true;
+      }
+
+      function applyCalculatedCostToItem() {
+        if (activeEditingItem.value) {
+          activeEditingItem.value.costUnit = Number(calcGrandTotal.value.toFixed(2));
+        }
+        showTechnicalModal.value = false;
+      }
+
+      // Filtragem
+      const filteredQuotes = computed(() => {
+        return quotes.value.filter(q => {
+          const matchQuery = q.number.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
+                             q.clientName.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
+                             (q.projectName && q.projectName.toLowerCase().includes(searchQuery.value.toLowerCase()));
+          const matchStatus = filterStatus.value === 'Todos' || q.status === filterStatus.value;
+          return matchQuery && matchStatus;
+        });
+      });
+
+      const totalQuotedAmount = computed(() => {
+        return quotes.value.reduce((acc, q) => acc + calculateQuoteTotalWithVat(q), 0);
+      });
+
+      const totalApprovedAmount = computed(() => {
+        return quotes.value
+          .filter(q => q.status === 'Adjudicado')
+          .reduce((acc, q) => acc + calculateQuoteTotalWithVat(q), 0);
+      });
+
+      const averageCostAmount = computed(() => {
+        if (!quotes.value.length) return 0;
+        const totalCost = quotes.value.reduce((acc, q) => acc + calculateQuoteCost(q), 0);
+        return totalCost / quotes.value.length;
+      });
+
+      function editQuote(q) {
+        selectedQuote.value = q;
+        currentView.value = 'quote-editor';
+      }
+
+      function createNewQuote() {
+        const nextId = quotes.value.length + 1;
+        const newNum = '2026-' + String(nextId).padStart(3, '0');
+        const nq = {
+          id: 'q-' + nextId,
+          number: newNum,
+          clientName: clients.value[0].name,
+          clientNif: clients.value[0].nif,
+          clientAddress: clients.value[0].address,
+          date: '02/09/2026',
+          responsible: currentUser.value,
+          projectName: 'Nova Obra',
+          status: 'Rascunho',
+          chapters: [
+            {
+              id: 1,
+              title: 'Mobiliário por Medida',
+              items: [
+                { id: '1.1', code: '1.1', designation: 'Móvel personalizado em melamina e portas lacadas', unit: 'un', quantity: 1, costUnit: 500, marginPercent: 0.50, fixedExtra: 50 }
+              ]
+            }
+          ]
+        };
+        quotes.value.unshift(nq);
+        selectedQuote.value = nq;
+        currentView.value = 'quote-editor';
+      }
+
+      function addChapter() {
+        if (!selectedQuote.value) return;
+        const nextC = selectedQuote.value.chapters.length + 1;
+        selectedQuote.value.chapters.push({
+          id: nextC,
+          title: 'Novo Capítulo',
+          items: [
+            { id: nextC + '.1', code: nextC + '.1', designation: 'Artigo novo', unit: 'un', quantity: 1, costUnit: 100, marginPercent: 0.50, fixedExtra: 0 }
+          ]
+        });
+      }
+
+      function removeChapter(idx) {
+        if (selectedQuote.value) {
+          selectedQuote.value.chapters.splice(idx, 1);
+        }
+      }
+
+      function addItemToChapter(chap) {
+        const nextI = chap.items.length + 1;
+        chap.items.push({
+          id: chap.id + '.' + nextI,
+          code: chap.id + '.' + nextI,
+          designation: 'Novo artigo personalizado',
+          unit: 'un',
+          quantity: 1,
+          costUnit: 200,
+          marginPercent: 0.50,
+          fixedExtra: 0
+        });
+      }
+
+      function removeItemFromChapter(chap, idx) {
+        chap.items.splice(idx, 1);
+      }
+
+      function onClientSelectChange() {
+        const c = clients.value.find(cl => cl.name === selectedQuote.value.clientName);
+        if (c) {
+          selectedQuote.value.clientNif = c.nif;
+          selectedQuote.value.clientAddress = c.address;
+        }
+      }
+
+      function openPdfPreview(q) {
+        pdfQuote.value = q;
+        showPdfModal.value = true;
+      }
+
+      function triggerPrint() {
+        window.print();
+      }
+
+      function formatCurrency(val) {
+        if (isNaN(val)) return '0,00 €';
+        return Number(val).toLocaleString('pt-PT', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €';
+      }
+
+      onMounted(() => {
+        lucide.createIcons();
+      });
+
+      return {
+        currentView,
+        currentUser,
+        searchQuery,
+        filterStatus,
+        clients,
+        materials,
+        workstations,
+        quotes,
+        selectedQuote,
+        filteredQuotes,
+        totalQuotedAmount,
+        totalApprovedAmount,
+        averageCostAmount,
+        showPdfModal,
+        pdfQuote,
+        showTechnicalModal,
+        calcParams,
+        calcOperations,
+        calcParts,
+        selectedCalcMaterialCode,
+        calcOperationsTotal,
+        calcMaterialsTotal,
+        calcGrandTotal,
+        calculateItemSellUnit,
+        calculateItemSellTotal,
+        calculateQuoteCost,
+        calculateQuoteSubtotal,
+        calculateQuoteTotalWithVat,
+        calculateQuoteMarginPercent,
+        calculatePartYield,
+        getActiveMaterialPrice,
+        openTechnicalModal,
+        applyCalculatedCostToItem,
+        editQuote,
+        createNewQuote,
+        addChapter,
+        removeChapter,
+        addItemToChapter,
+        removeItemFromChapter,
+        onClientSelectChange,
+        openPdfPreview,
+        triggerPrint,
+        formatCurrency
+      };
+    }
+  }).mount('#app');
+</script>
+
+</body>
+</html>
