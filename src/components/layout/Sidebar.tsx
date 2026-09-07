@@ -10,7 +10,7 @@ import {
   Factory,
   Package,
   Receipt,
-  UserCheck,
+  UserCheck, Mail,
 } from 'lucide-react';
 
 export default function Sidebar() {
@@ -121,6 +121,25 @@ export default function Sidebar() {
               <span className="text-[10px] bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full font-semibold shrink-0 ml-2">
                 {materials.length}
               </span>
+            </button>
+          )}
+
+          
+          {/* Módulo Emails & Cobranças */}
+          {userRole !== 'trabalhador' && (
+            <button
+              type="button"
+              onClick={() => setCurrentView('emails')}
+              className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs transition-colors ${
+                currentView === 'emails'
+                  ? 'bg-gray-900 text-white font-medium shadow-sm'
+                  : 'text-gray-600 hover:bg-gray-100'
+              }`}
+            >
+              <div className="flex items-center gap-2.5">
+                <Mail className="w-4 h-4" />
+                <span>Emails Automáticos</span>
+              </div>
             </button>
           )}
 

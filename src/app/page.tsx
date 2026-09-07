@@ -9,6 +9,7 @@ import QuoteEditor from '@/components/quotes/QuoteEditor';
 import ClientsView from '@/components/clients/ClientsView';
 import MaterialsView from '@/components/materials/MaterialsView';
 import SettingsView from '@/components/settings/SettingsView';
+import EmailsView from '@/components/emails/EmailsView';
 import OfficialQuotePdfModal from '@/components/pdf/OfficialQuotePdfModal';
 
 export default function HomePage() {
@@ -31,6 +32,7 @@ export default function HomePage() {
           {currentView === 'clients' && <ClientsView />}
           {currentView === 'materials' && <MaterialsView />}
           {currentView === 'settings' && <SettingsView />}
+          {currentView === 'emails' && <EmailsView />}
         </div>
       </main>
 

@@ -37,8 +37,8 @@ import {
 
 interface AppContextType {
   // Navegação e Utilizador
-  currentView: 'quotes-list' | 'quote-editor' | 'clients' | 'materials' | 'settings';
-  setCurrentView: (view: 'quotes-list' | 'quote-editor' | 'clients' | 'materials' | 'settings') => void;
+  currentView: 'quotes-list' | 'quote-editor' | 'clients' | 'materials' | 'settings' | 'emails';
+  setCurrentView: (view: 'quotes-list' | 'quote-editor' | 'clients' | 'materials' | 'settings' | 'emails') => void;
   currentUser: string;
   setCurrentUser: (user: string) => void;
   userRole: UserRole;
