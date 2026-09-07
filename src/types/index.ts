@@ -179,6 +179,9 @@ export interface SiteVisit {
   clientName: string;
   clientPhone?: string;
   clientAddress?: string;
+  clientEmail?: string;
+  clientNif?: string;
+  checklist?: Record<string, boolean>;
   visitDate: string; // YYYY-MM-DD
   responsible: string;
   projectTypes: string[]; // e.g. ['Cozinha', 'Portas', 'Roupeiros']
