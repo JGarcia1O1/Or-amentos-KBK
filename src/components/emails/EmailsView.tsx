@@ -11,6 +11,7 @@ export default function EmailsView() {
 
   const [templateType, setTemplateType] = useState('lembrete');
   const [dataSource, setDataSource] = useState<'auto' | 'manual'>('auto');
+  const [showTable, setShowTable] = useState(true);
   const [selectedQuoteId, setSelectedQuoteId] = useState('');
 
   // Manual fields
@@ -126,8 +127,7 @@ export default function EmailsView() {
 
     const valorFormatado = formatCurrencyPT(activeData.amount);
 
-    const tableHtml = `
-      <p>C/C de ${activeData.clientName || '[Nome do Cliente]'}</p>
+    const tableHtml = showTable ? `
       <table style="width: 100%; border-collapse: collapse; font-family: Calibri, Arial, sans-serif; font-size: 13px; margin-bottom: 20px;">
         <thead>
           <tr style="background-color: #111827; color: white;">
@@ -152,6 +152,13 @@ export default function EmailsView() {
           </tr>
         </tbody>
       </table>
+      <p><strong>Total em dívida: ${valorFormatado}</strong></p>
+    ` : `
+      <div style="margin-bottom: 20px; padding: 15px; border-left: 3px solid #111827; background-color: #f9fafb;">
+        <p style="margin: 0 0 5px 0;"><strong>Documento:</strong> Factura n.º ${activeData.invoiceNum || '...'}</p>
+        <p style="margin: 0 0 5px 0;"><strong>Data de Movimento:</strong> ${activeData.invoiceDate || '...'}</p>
+        <p style="margin: 0 0 5px 0;"><strong>Data de Vencimento:</strong> ${activeData.dueDate || '...'} (${activeData.delayDays || '0'} dias em atraso)</p>
+      </div>
       <p><strong>Total em dívida: ${valorFormatado}</strong></p>
     `;
 
@@ -268,6 +275,18 @@ export default function EmailsView() {
                 <span className="text-sm text-gray-700 font-medium">Introduzir dados manualmente</span>
               </label>
             </div>
+            <div className="mt-4 pt-4 border-t border-gray-200">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input 
+                  type="checkbox" 
+                  checked={showTable}
+                  onChange={(e) => setShowTable(e.target.checked)}
+                  className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+                />
+                <span className="text-sm font-medium text-gray-700">Apresentar valores em Tabela</span>
+              </label>
+            </div>
+
 
             {dataSource === 'auto' && (
               <div className="mt-4 p-4 bg-blue-50/50 border border-blue-100 rounded-xl">
