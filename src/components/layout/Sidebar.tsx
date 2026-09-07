@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { useApp } from '@/context/AppContext';
-import {
+import { ClipboardList, 
   FileSpreadsheet,
   Users,
   Layers,
@@ -11,7 +11,7 @@ import {
   Package,
   Receipt,
   UserCheck, Settings, LogOut, Mail,
-} from 'lucide-react';
+ } from 'lucide-react';
 
 import ProfileSettingsModal from './ProfileSettingsModal';
 

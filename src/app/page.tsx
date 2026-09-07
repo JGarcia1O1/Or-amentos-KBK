@@ -10,6 +10,8 @@ import ClientsView from '@/components/clients/ClientsView';
 import MaterialsView from '@/components/materials/MaterialsView';
 import SettingsView from '@/components/settings/SettingsView';
 import EmailsView from '@/components/emails/EmailsView';
+import VisitsView from '@/components/visits/VisitsView';
+import VisitForm from '@/components/visits/VisitForm';
 import OfficialQuotePdfModal from '@/components/pdf/OfficialQuotePdfModal';
 
 export default function HomePage() {
@@ -33,6 +35,8 @@ export default function HomePage() {
           {currentView === 'materials' && <MaterialsView />}
           {currentView === 'settings' && <SettingsView />}
           {currentView === 'emails' && <EmailsView />}
+          {currentView === 'visits-list' && <VisitsView />}
+          {currentView === 'visit-editor' && <VisitForm />}
         </div>
       </main>
 

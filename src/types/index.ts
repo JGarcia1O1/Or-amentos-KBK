@@ -170,3 +170,22 @@ export interface CompanyInfo {
   jurisdictionTerms?: string;
 }
 
+
+export type VisitStatus = 'Agendado' | 'Realizado' | 'Orcamentado';
+
+export interface SiteVisit {
+  id: string;
+  number: string;
+  clientName: string;
+  clientPhone?: string;
+  clientAddress?: string;
+  visitDate: string; // YYYY-MM-DD
+  responsible: string;
+  projectTypes: string[]; // e.g. ['Cozinha', 'Portas', 'Roupeiros']
+  technicalNotes?: string;
+  measurementsData?: any; // To be typed more strictly later if needed
+  status: VisitStatus;
+  userId?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
