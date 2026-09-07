@@ -18,13 +18,13 @@ export default function EmailsView() {
   const getSubject = () => {
     switch (templateType) {
       case 'lembrete':
-        return \`Lembrete Amigável - Valores Pendentes | Cliente: \${clientName || '[Nome do Cliente]'}\`;
+        return `Lembrete Amigável - Valores Pendentes | Cliente: ${clientName || '[Nome do Cliente]'}`;
       case '1_aviso':
-        return \`1º Aviso - Valores Pendentes | Cliente: \${clientName || '[Nome do Cliente]'}\`;
+        return `1º Aviso - Valores Pendentes | Cliente: ${clientName || '[Nome do Cliente]'}`;
       case '2_aviso':
-        return \`2º Aviso - Valores Pendentes | Cliente: \${clientName || '[Nome do Cliente]'}\`;
+        return `2º Aviso - Valores Pendentes | Cliente: ${clientName || '[Nome do Cliente]'}`;
       case '3_aviso':
-        return \`3º Aviso - Notificação de Pré-Contencioso | Cliente: \${clientName || '[Nome do Cliente]'}\`;
+        return `3º Aviso - Notificação de Pré-Contencioso | Cliente: ${clientName || '[Nome do Cliente]'}`;
       default:
         return '';
     }
@@ -42,22 +42,22 @@ export default function EmailsView() {
     };
 
     if (templateType === 'lembrete') {
-      intro = \`<p>Exmos. Senhores,</p><p>Vimos por este meio lembrar V. Exas., que já se venceram as faturas conforme anexo, pelo que solicitamos previsão da sua liquidação.</p>\`;
-      body = \`<p>Caso esta nossa solicitação se cruze com o vosso pagamento, queiram, por favor, ignorar a mesma.</p>\`;
-      closing = \`<p>Para qualquer esclarecimento adicional por favor contacte-nos por esta via e/ou por telefone para o 234 790 180 (chamada para a rede fixa nacional).</p><p>Agradecemos a atenção dispensada e colocamo-nos à sua inteira disposição para aquilo que entender necessário.</p>\`;
+      intro = `<p>Exmos. Senhores,</p><p>Vimos por este meio lembrar V. Exas., que já se venceram as faturas conforme anexo, pelo que solicitamos previsão da sua liquidação.</p>`;
+      body = `<p>Caso esta nossa solicitação se cruze com o vosso pagamento, queiram, por favor, ignorar a mesma.</p>`;
+      closing = `<p>Para qualquer esclarecimento adicional por favor contacte-nos por esta via e/ou por telefone para o 234 790 180 (chamada para a rede fixa nacional).</p><p>Agradecemos a atenção dispensada e colocamo-nos à sua inteira disposição para aquilo que entender necessário.</p>`;
     } else if (templateType === '1_aviso') {
-      intro = \`<p>Estimado Cliente,</p><p>Esperamos que se encontre bem.</p><p>Uma vez que, até ao momento, não temos registo de pagamento dos documentos já vencidos até à data, serve o presente para solicitar a liquidação urgente dos mesmos.</p>\`;
-      closing = \`<p>Poderá proceder à liquidação dos documentos pendentes através do seguinte meio de pagamento:<br><strong>Bankinter - PT50 0269 0343 00205777602 83</strong></p><p>Agradecemos o envio do respetivo comprovativo de transferência em resposta a este e-mail.</p><p>Se esta informação se cruzou, entretanto, com a regularização dos documentos acima discriminados, queiram desde já aceitar as nossas desculpas e ignorar esta mensagem.</p>\`;
+      intro = `<p>Estimado Cliente,</p><p>Esperamos que se encontre bem.</p><p>Uma vez que, até ao momento, não temos registo de pagamento dos documentos já vencidos até à data, serve o presente para solicitar a liquidação urgente dos mesmos.</p>`;
+      closing = `<p>Poderá proceder à liquidação dos documentos pendentes através do seguinte meio de pagamento:<br><strong>Bankinter - PT50 0269 0343 00205777602 83</strong></p><p>Agradecemos o envio do respetivo comprovativo de transferência em resposta a este e-mail.</p><p>Se esta informação se cruzou, entretanto, com a regularização dos documentos acima discriminados, queiram desde já aceitar as nossas desculpas e ignorar esta mensagem.</p>`;
     } else if (templateType === '2_aviso') {
-      intro = \`<p>Estimado Cliente,</p><p>Esperamos que se encontre bem.</p><p>Uma vez que, até ao momento, não temos registo de pagamento dos documentos já vencidos até à data, serve o presente para solicitar, uma vez mais, a liquidação urgente dos mesmos.</p><p><strong>Solicitamos que proceda à liquidação destes valores num prazo máximo de 5 dias, por forma a mantermos a normalidade da nossa relação comercial.</strong></p>\`;
-      closing = \`<p>Poderá proceder à liquidação dos documentos pendentes através do seguinte meio de pagamento:<br><strong>Bankinter - PT50 0269 0343 00205777602 83</strong></p><p>Agradecemos o envio do respetivo comprovativo de transferência em resposta a este e-mail.</p><p>Se esta informação se cruzou, entretanto, com a regularização dos documentos acima discriminados, queiram desde já aceitar as nossas desculpas e ignorar esta mensagem.</p>\`;
+      intro = `<p>Estimado Cliente,</p><p>Esperamos que se encontre bem.</p><p>Uma vez que, até ao momento, não temos registo de pagamento dos documentos já vencidos até à data, serve o presente para solicitar, uma vez mais, a liquidação urgente dos mesmos.</p><p><strong>Solicitamos que proceda à liquidação destes valores num prazo máximo de 5 dias, por forma a mantermos a normalidade da nossa relação comercial.</strong></p>`;
+      closing = `<p>Poderá proceder à liquidação dos documentos pendentes através do seguinte meio de pagamento:<br><strong>Bankinter - PT50 0269 0343 00205777602 83</strong></p><p>Agradecemos o envio do respetivo comprovativo de transferência em resposta a este e-mail.</p><p>Se esta informação se cruzou, entretanto, com a regularização dos documentos acima discriminados, queiram desde já aceitar as nossas desculpas e ignorar esta mensagem.</p>`;
     } else if (templateType === '3_aviso') {
-      intro = \`<p>Estimado Cliente,</p><p>Esperamos que se encontre bem.</p><p>Face à ausência de regularização dos valores pendentes e não obstante as nossas sucessivas interpelações, servimo-nos da presente para notificar formalmente V. Exas. de que os documentos abaixo discriminados permanecem por liquidar.</p><p><strong>Cumpre-nos informar que, caso a liquidação total do montante em dívida não ocorra no prazo improrrogável de 8 dias, o processo será imediatamente remetido ao nosso departamento jurídico para instauração da competente ação executiva.</strong></p>\`;
-      closing = \`<p>Poderá proceder à liquidação dos documentos pendentes através do seguinte meio de pagamento:<br><strong>Bankinter - PT50 0269 0343 00205777602 83</strong></p><p>Aguardamos a receção do respetivo comprovativo de transferência com a máxima urgência para suspendermos as diligências legais.</p>\`;
+      intro = `<p>Estimado Cliente,</p><p>Esperamos que se encontre bem.</p><p>Face à ausência de regularização dos valores pendentes e não obstante as nossas sucessivas interpelações, servimo-nos da presente para notificar formalmente V. Exas. de que os documentos abaixo discriminados permanecem por liquidar.</p><p><strong>Cumpre-nos informar que, caso a liquidação total do montante em dívida não ocorra no prazo improrrogável de 8 dias, o processo será imediatamente remetido ao nosso departamento jurídico para instauração da competente ação executiva.</strong></p>`;
+      closing = `<p>Poderá proceder à liquidação dos documentos pendentes através do seguinte meio de pagamento:<br><strong>Bankinter - PT50 0269 0343 00205777602 83</strong></p><p>Aguardamos a receção do respetivo comprovativo de transferência com a máxima urgência para suspendermos as diligências legais.</p>`;
     }
 
-    const tableHtml = (templateType !== 'lembrete') ? \`
-      <p>C/C de Cliente - \${clientName || '[Nome do Cliente]'}:</p>
+    const tableHtml = (templateType !== 'lembrete') ? `
+      <p>C/C de Cliente - ${clientName || '[Nome do Cliente]'}:</p>
       <table style="width: 100%; border-collapse: collapse; font-family: sans-serif; font-size: 12px; margin-bottom: 20px;">
         <thead>
           <tr style="background-color: #111827; color: white;">
@@ -73,34 +73,34 @@ export default function EmailsView() {
         <tbody>
           <tr>
             <td style="padding: 8px; border: 1px solid #e5e7eb;">N/Factura</td>
-            <td style="padding: 8px; text-align: center; border: 1px solid #e5e7eb;">\${invoiceNum || '...'}</td>
-            <td style="padding: 8px; text-align: center; border: 1px solid #e5e7eb;">\${invoiceDate || '...'}</td>
-            <td style="padding: 8px; text-align: center; border: 1px solid #e5e7eb;">\${dueDate || '...'}</td>
-            <td style="padding: 8px; text-align: right; border: 1px solid #e5e7eb;">\${formatAmount(amount)}</td>
-            <td style="padding: 8px; text-align: right; border: 1px solid #e5e7eb;">\${formatAmount(amount)}</td>
-            <td style="padding: 8px; text-align: right; border: 1px solid #e5e7eb;">\${delayDays || '...'}</td>
+            <td style="padding: 8px; text-align: center; border: 1px solid #e5e7eb;">${invoiceNum || '...'}</td>
+            <td style="padding: 8px; text-align: center; border: 1px solid #e5e7eb;">${invoiceDate || '...'}</td>
+            <td style="padding: 8px; text-align: center; border: 1px solid #e5e7eb;">${dueDate || '...'}</td>
+            <td style="padding: 8px; text-align: right; border: 1px solid #e5e7eb;">${formatAmount(amount)}</td>
+            <td style="padding: 8px; text-align: right; border: 1px solid #e5e7eb;">${formatAmount(amount)}</td>
+            <td style="padding: 8px; text-align: right; border: 1px solid #e5e7eb;">${delayDays || '...'}</td>
           </tr>
         </tbody>
       </table>
-      <p><strong>O Total de Não Regularizado é: \${formatAmount(amount)}</strong></p>
-    \` : '';
+      <p><strong>O Total de Não Regularizado é: ${formatAmount(amount)}</strong></p>
+    ` : '';
 
-    const signature = \`
+    const signature = `
       <br>
       <p>Com os melhores cumprimentos,<br>
       Departamento Financeiro<br>
       Kubik Home, Lda</p>
-    \`;
+    `;
 
-    return \`
+    return `
       <div style="font-family: Calibri, Arial, sans-serif; font-size: 14px; color: #333; max-width: 800px;">
-        \${intro}
-        \${tableHtml}
-        \${body}
-        \${closing}
-        \${signature}
+        ${intro}
+        ${tableHtml}
+        ${body}
+        ${closing}
+        ${signature}
       </div>
-    \`;
+    `;
   };
 
   const handleCopy = async () => {
@@ -114,9 +114,6 @@ export default function EmailsView() {
       
       const data = [new ClipboardItem({ 'text/html': blobHtml, 'text/plain': blobText })];
       await navigator.clipboard.write(data);
-      
-      // Attempt to also copy the subject somehow? Usually users copy subject separately.
-      // We will show the subject so they can copy it manually.
       
       setCopied(true);
       toast.success('Corpo do e-mail copiado! Cole diretamente no Outlook.');
@@ -223,9 +220,9 @@ export default function EmailsView() {
           <div className="pt-4 mt-4 border-t border-gray-200">
             <button
               onClick={handleCopy}
-              className={\`w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl font-bold text-sm transition-all \${
+              className={`w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl font-bold text-sm transition-all ${
                 copied ? 'bg-emerald-500 text-white shadow-emerald-500/20' : 'bg-black text-white hover:bg-gray-800 hover:shadow-lg'
-              } shadow-md\`}
+              } shadow-md`}
             >
               {copied ? <Check className="w-5 h-5" /> : <Copy className="w-5 h-5" />}
               {copied ? 'Copiado para o Outlook!' : 'Copiar Texto do E-mail'}
