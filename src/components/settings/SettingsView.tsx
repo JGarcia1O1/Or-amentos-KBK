@@ -14,6 +14,7 @@ import {
 import { toast } from 'sonner';
 import { Workstation, CompanyInfo } from '@/types';
 import ConditionsLivePreview from './ConditionsLivePreview';
+import BackupCard from './BackupCard';
 
 export default function SettingsView() {
   const {
