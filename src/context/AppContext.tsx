@@ -659,16 +659,23 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     const now = new Date();
     const y = now.getFullYear();
     const m = now.getMonth() + 1;
-    const d = String(now.getDate()).padStart(2, '0');
-    const baseNum = `${y}-${m}${d}`;
     
-    let suffix = '';
-    let duplicateCount = 0;
-    while (quotes.some(q => q.number === `${baseNum}${suffix}`)) {
-      duplicateCount++;
-      suffix = `-${duplicateCount}`;
-    }
-    const nextNum = `${baseNum}${suffix}`;
+    // Contagem sequencial do MAs
+    let maxSeq = 0;
+    quotes.forEach(q => {
+      if (q.number && q.number.startsWith(`${y}-${m}`)) {
+        const rightPart = q.number.replace(`${y}-${m}`, '');
+        if (/^\d+$/.test(rightPart)) {
+          const seqInt = parseInt(rightPart, 10);
+          if (!isNaN(seqInt) && seqInt > maxSeq) {
+            maxSeq = seqInt;
+          }
+        }
+      }
+    });
+    
+    const seqStr = String(maxSeq + 1).padStart(2, '0');
+    const nextNum = `${y}-${m}${seqStr}`;
 
     const defaultClient = clients[0] || {
       name: 'Cliente Exemplo',
