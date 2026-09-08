@@ -315,14 +315,15 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
                 console.error('Migração de orçamentos falhou', e);
               }
             } else {
-              setQuotes(data);
+              setQuotes(data.length > 0 ? data : INITIAL_QUOTES);
               setHasLoadedQuotes(true);
             }
           }
         })
         .catch(err => {
-          console.error(err);
-          toast.error('Erro ao carregar orçamentos');
+          console.error('Erro ao carregar orçamentos:', err);
+          setQuotes(INITIAL_QUOTES);
+          setHasLoadedQuotes(true);
         });
     }
   }, []);
