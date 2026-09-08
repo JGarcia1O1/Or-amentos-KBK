@@ -4,6 +4,7 @@ import React from 'react';
 import { useApp } from '@/context/AppContext';
 import Sidebar from '@/components/layout/Sidebar';
 import Header from '@/components/layout/Header';
+import CompanyDashboard from '@/components/dashboard/CompanyDashboard';
 import QuotesDashboard from '@/components/quotes/QuotesDashboard';
 import QuoteEditor from '@/components/quotes/QuoteEditor';
 import ClientsView from '@/components/clients/ClientsView';
@@ -29,6 +30,7 @@ export default function HomePage() {
 
         {/* Vistas Dinâmicas dos Módulos */}
         <div className="flex-1">
+          {currentView === 'dashboard' && <CompanyDashboard />}
           {currentView === 'quotes-list' && <QuotesDashboard />}
           {currentView === 'quote-editor' && <QuoteEditor />}
           {currentView === 'clients' && <ClientsView />}

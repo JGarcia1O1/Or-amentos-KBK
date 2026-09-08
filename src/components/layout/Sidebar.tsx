@@ -57,6 +57,21 @@ export default function Sidebar() {
             Módulos Ativos
           </div>
 
+          <button
+            type="button"
+            onClick={() => setCurrentView('dashboard')}
+            className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs transition-colors ${
+              currentView === 'dashboard'
+                ? 'bg-gray-900 text-white font-medium shadow-sm'
+                : 'text-gray-600 hover:bg-gray-100'
+            }`}
+          >
+            <div className="flex items-center gap-2.5">
+              <Sliders className="w-4 h-4" />
+              <span>Gestão & Analytics</span>
+            </div>
+          </button>
+
           {/* Módulo Orçamentos */}
           <button
             type="button"
