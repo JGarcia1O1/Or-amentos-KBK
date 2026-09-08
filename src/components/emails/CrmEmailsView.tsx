@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
-import { Mail, Copy, Check, FileText, Settings, User } from 'lucide-react';
+import React, { useState } from 'react';
+import { Mail, Copy, Check, FileText } from 'lucide-react';
 import { toast } from 'sonner';
 import { useApp } from '@/context/AppContext';
 
@@ -115,11 +115,11 @@ KUBIK HOME<br>
 ${respPhone} · ${respEmail}<br>
 ${companyInfo.website || 'www.kubikhome.com'}</p>`;
 
-    return `<div style="font-family: Arial, sans-serif; font-size: 14px; color: #333; line-height: 1.6;">
-      ${body}
-      <br>
-      ${signature}
-    </div>`;
+    return `<div style="font-family: 'Segoe UI', Arial, sans-serif; font-size: 14px; color: #333333; line-height: 1.6;">
+${body}
+<br>
+${signature}
+</div>`;
   };
 
   const handleCopy = async () => {
@@ -133,7 +133,7 @@ ${companyInfo.website || 'www.kubikhome.com'}</p>`;
       
       await navigator.clipboard.write([clipboardItem]);
       setCopied(true);
-      toast.success('Email copiado para a área de transferência com sucesso!');
+      toast.success('E-mail copiado para a área de transferência com sucesso!');
       setTimeout(() => setCopied(false), 3000);
     } catch (err) {
       toast.error('Erro ao copiar. Tente selecionar o texto manualmente.');
@@ -141,256 +141,254 @@ ${companyInfo.website || 'www.kubikhome.com'}</p>`;
   };
 
   return (
-    <div className="flex gap-6 h-full">
-      {/* Esquerda: Configurações */}
-      <div className="w-[450px] bg-white rounded-2xl shadow-sm border border-gray-200 flex flex-col h-[calc(100vh-140px)]">
-        <div className="p-5 border-b border-gray-100">
-          <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
-            <Mail className="w-5 h-5 text-blue-600" />
-            Configurar Email CRM
-          </h2>
-        </div>
-
-        <div className="p-5 overflow-y-auto flex-1 space-y-5">
-          <div>
-            <label className="block text-xs font-semibold text-gray-700 uppercase mb-2">Momento (Template)</label>
-            <select 
-              className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors"
-              value={templateType}
-              onChange={(e) => setTemplateType(e.target.value)}
-            >
-              <option value="1_rececao">1. Acusar receção do pedido (24h)</option>
-              <option value="2_envio">2. Envio do orçamento</option>
-              <option value="3_followup1">3. Follow-up 1 (3.º dia útil)</option>
-              <option value="4_followup2">4. Follow-up 2 (8.º dia)</option>
-              <option value="5_followup3">5. Follow-up 3 e último (15.º dia)</option>
-              <option value="6_adjudicada">6. Proposta adjudicada</option>
-              <option value="7_recusada">7. Proposta não adjudicada</option>
-            </select>
+    <div className="h-full space-y-6 overflow-y-auto">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        {/* Esquerda: Configurações */}
+        <div className="col-span-1 space-y-5 bg-gray-50 p-5 rounded-2xl border border-gray-100">
+          <div className="space-y-4">
+            <h2 className="text-sm font-bold uppercase text-gray-700 tracking-wider">Tipo de E-mail</h2>
+            <div>
+              <select 
+                value={templateType}
+                onChange={(e) => setTemplateType(e.target.value)}
+                className="w-full border border-gray-200 rounded-xl p-2.5 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all bg-white font-medium"
+              >
+                <option value="1_rececao">1. Acusar receção do pedido</option>
+                <option value="2_envio">2. Envio do orçamento</option>
+                <option value="3_followup1">3. Follow-up 1 (3.º dia útil)</option>
+                <option value="4_followup2">4. Follow-up 2 (8.º dia)</option>
+                <option value="5_followup3">5. Follow-up 3 e último (15.º dia)</option>
+                <option value="6_adjudicada">6. Proposta adjudicada</option>
+                <option value="7_recusada">7. Proposta não adjudicada</option>
+              </select>
+            </div>
           </div>
 
-          <div className="space-y-4 pt-4 border-t border-gray-100">
-            <div>
-              <label className="block text-xs text-gray-600 mb-1">Nome do Cliente</label>
-              <input 
-                type="text" 
-                value={clientName}
-                onChange={(e) => setClientName(e.target.value)}
-                className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm"
-                placeholder="Ex: João Garcia"
-              />
-            </div>
+          <div className="pt-4 border-t border-gray-200 space-y-4">
+            <h2 className="text-sm font-bold uppercase text-gray-700 tracking-wider">Dados do Orçamento</h2>
             
-            <div>
-              <label className="block text-xs text-gray-600 mb-1">Obra / Referência</label>
-              <input 
-                type="text" 
-                value={reference}
-                onChange={(e) => setReference(e.target.value)}
-                className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm"
-                placeholder="Ex: Cozinha Moradia Faro"
-              />
-            </div>
-
-            {templateType !== '1_rececao' && (
+            <div className="space-y-3">
               <div>
-                <label className="block text-xs text-gray-600 mb-1">N.º Orçamento</label>
+                <label className="block text-xs text-gray-500 font-medium mb-1">Nome do Cliente</label>
                 <input 
                   type="text" 
-                  value={quoteNum}
-                  onChange={(e) => setQuoteNum(e.target.value)}
-                  className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm"
-                  placeholder="Ex: 2026-001"
+                  value={clientName}
+                  onChange={(e) => setClientName(e.target.value)}
+                  className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-500 transition-all"
+                  placeholder="Ex: João Garcia"
                 />
               </div>
-            )}
+              
+              <div>
+                <label className="block text-xs text-gray-500 font-medium mb-1">Obra / Referência</label>
+                <input 
+                  type="text" 
+                  value={reference}
+                  onChange={(e) => setReference(e.target.value)}
+                  className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-500 transition-all"
+                  placeholder="Ex: Cozinha Moradia Faro"
+                />
+              </div>
 
-            {templateType === '2_envio' && (
-              <>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs text-gray-600 mb-1">Valor Total (€)</label>
-                    <input 
-                      type="text" 
-                      value={quoteValue}
-                      onChange={(e) => setQuoteValue(e.target.value)}
-                      className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs text-gray-600 mb-1">Validade</label>
-                    <input 
-                      type="text" 
-                      value={validity}
-                      onChange={(e) => setValidity(e.target.value)}
-                      className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm"
-                    />
-                  </div>
-                </div>
+              {templateType !== '1_rececao' && (
                 <div>
-                  <label className="block text-xs text-gray-600 mb-1">Prazo de Execução</label>
+                  <label className="block text-xs text-gray-500 font-medium mb-1">N.º Orçamento</label>
+                  <input 
+                    type="text" 
+                    value={quoteNum}
+                    onChange={(e) => setQuoteNum(e.target.value)}
+                    className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-500 transition-all"
+                    placeholder="Ex: 2026-001"
+                  />
+                </div>
+              )}
+
+              {templateType === '2_envio' && (
+                <>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs text-gray-500 font-medium mb-1">Valor Total (€)</label>
+                      <input 
+                        type="text" 
+                        value={quoteValue}
+                        onChange={(e) => setQuoteValue(e.target.value)}
+                        className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-500 transition-all"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-gray-500 font-medium mb-1">Validade</label>
+                      <input 
+                        type="text" 
+                        value={validity}
+                        onChange={(e) => setValidity(e.target.value)}
+                        className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-500 transition-all"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-500 font-medium mb-1">Prazo de Execução</label>
+                    <input 
+                      type="text" 
+                      value={deadline}
+                      onChange={(e) => setDeadline(e.target.value)}
+                      className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-500 transition-all"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-500 font-medium mb-1">Condições</label>
+                    <input 
+                      type="text" 
+                      value={conditions}
+                      onChange={(e) => setConditions(e.target.value)}
+                      className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-500 transition-all"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-500 font-medium mb-1">Inclui</label>
+                    <input 
+                      type="text" 
+                      value={inclusions}
+                      onChange={(e) => setInclusions(e.target.value)}
+                      className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-500 transition-all"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-500 font-medium mb-1">Não Inclui (Exclusões)</label>
+                    <input 
+                      type="text" 
+                      value={exclusions}
+                      onChange={(e) => setExclusions(e.target.value)}
+                      className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-500 transition-all"
+                    />
+                  </div>
+                </>
+              )}
+
+              {templateType === '1_rececao' && (
+                <div>
+                  <label className="block text-xs text-gray-500 font-medium mb-1">Data de Resposta (Prometida)</label>
+                  <input 
+                    type="text" 
+                    value={responseDate}
+                    onChange={(e) => setResponseDate(e.target.value)}
+                    className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-500 transition-all"
+                  />
+                </div>
+              )}
+
+              {templateType === '3_followup1' && (
+                <div>
+                  <label className="block text-xs text-gray-500 font-medium mb-1">Data de Envio do Orçamento</label>
+                  <input 
+                    type="text" 
+                    value={sendDate}
+                    onChange={(e) => setSendDate(e.target.value)}
+                    className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-500 transition-all"
+                  />
+                </div>
+              )}
+
+              {(templateType === '4_followup2' || templateType === '5_followup3') && (
+                <div>
+                  <label className="block text-xs text-gray-500 font-medium mb-1">Validade do Orçamento</label>
+                  <input 
+                    type="text" 
+                    value={validity}
+                    onChange={(e) => setValidity(e.target.value)}
+                    className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-500 transition-all"
+                  />
+                </div>
+              )}
+              
+              {templateType === '6_adjudicada' && (
+                <div>
+                  <label className="block text-xs text-gray-500 font-medium mb-1">Prazo de Execução</label>
                   <input 
                     type="text" 
                     value={deadline}
                     onChange={(e) => setDeadline(e.target.value)}
-                    className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm"
+                    className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-500 transition-all"
                   />
                 </div>
-                <div>
-                  <label className="block text-xs text-gray-600 mb-1">Condições</label>
+              )}
+            </div>
+          </div>
+
+          {/* Signature Area */}
+          <div className="pt-4 border-t border-gray-200 space-y-4">
+             <h2 className="text-sm font-bold uppercase text-gray-700 tracking-wider">A Minha Assinatura</h2>
+             <div className="space-y-3">
+               <input 
+                type="text" 
+                value={respName}
+                onChange={(e) => setRespName(e.target.value)}
+                className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-500 transition-all"
+                placeholder="O Teu Nome"
+               />
+               <div className="grid grid-cols-2 gap-3">
                   <input 
                     type="text" 
-                    value={conditions}
-                    onChange={(e) => setConditions(e.target.value)}
-                    className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm"
+                    value={respPhone}
+                    onChange={(e) => setRespPhone(e.target.value)}
+                    className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-500 transition-all"
+                    placeholder="Telemóvel"
                   />
-                </div>
-                <div>
-                  <label className="block text-xs text-gray-600 mb-1">Inclui</label>
                   <input 
                     type="text" 
-                    value={inclusions}
-                    onChange={(e) => setInclusions(e.target.value)}
-                    className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm"
+                    value={respEmail}
+                    onChange={(e) => setRespEmail(e.target.value)}
+                    className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-500 transition-all"
+                    placeholder="Email"
                   />
-                </div>
-                <div>
-                  <label className="block text-xs text-gray-600 mb-1">Não Inclui (Exclusões)</label>
-                  <input 
-                    type="text" 
-                    value={exclusions}
-                    onChange={(e) => setExclusions(e.target.value)}
-                    className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm"
-                  />
-                </div>
-              </>
-            )}
-
-            {templateType === '1_rececao' && (
-              <div>
-                <label className="block text-xs text-gray-600 mb-1">Data de Resposta (Prometida)</label>
-                <input 
-                  type="text" 
-                  value={responseDate}
-                  onChange={(e) => setResponseDate(e.target.value)}
-                  className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm"
-                />
-              </div>
-            )}
-
-            {templateType === '3_followup1' && (
-              <div>
-                <label className="block text-xs text-gray-600 mb-1">Data de Envio do Orçamento</label>
-                <input 
-                  type="text" 
-                  value={sendDate}
-                  onChange={(e) => setSendDate(e.target.value)}
-                  className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm"
-                />
-              </div>
-            )}
-
-            {(templateType === '4_followup2' || templateType === '5_followup3') && (
-              <div>
-                <label className="block text-xs text-gray-600 mb-1">Validade do Orçamento</label>
-                <input 
-                  type="text" 
-                  value={validity}
-                  onChange={(e) => setValidity(e.target.value)}
-                  className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm"
-                />
-              </div>
-            )}
-            
-            {templateType === '6_adjudicada' && (
-              <div>
-                <label className="block text-xs text-gray-600 mb-1">Prazo de Execução (Semanas/Dias)</label>
-                <input 
-                  type="text" 
-                  value={deadline}
-                  onChange={(e) => setDeadline(e.target.value)}
-                  className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm"
-                />
-              </div>
-            )}
-
-            {/* Signature Area */}
-            <div className="pt-4 mt-4 border-t border-gray-100">
-               <label className="block text-xs font-semibold text-gray-700 uppercase mb-2">A Minha Assinatura</label>
-               <div className="space-y-3">
-                 <input 
-                  type="text" 
-                  value={respName}
-                  onChange={(e) => setRespName(e.target.value)}
-                  className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm"
-                  placeholder="O Teu Nome"
-                 />
-                 <div className="grid grid-cols-2 gap-4">
-                    <input 
-                      type="text" 
-                      value={respPhone}
-                      onChange={(e) => setRespPhone(e.target.value)}
-                      className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm"
-                      placeholder="Telemóvel"
-                    />
-                    <input 
-                      type="text" 
-                      value={respEmail}
-                      onChange={(e) => setRespEmail(e.target.value)}
-                      className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm"
-                      placeholder="Email"
-                    />
-                 </div>
                </div>
-            </div>
+             </div>
+          </div>
 
+          <div className="pt-4 border-t border-gray-200">
+            <button
+              onClick={handleCopy}
+              className={`w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold transition-all shadow-sm ${
+                copied 
+                  ? 'bg-emerald-500 text-white hover:bg-emerald-600' 
+                  : 'bg-blue-600 text-white hover:bg-blue-700'
+              }`}
+            >
+              {copied ? <Check className="w-5 h-5" /> : <Copy className="w-5 h-5" />}
+              {copied ? 'Copiado!' : 'Copiar E-mail'}
+            </button>
           </div>
         </div>
 
-        <div className="p-5 border-t border-gray-100 bg-gray-50/50">
-          <button 
-            onClick={handleCopy}
-            className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-white font-medium transition-all shadow-sm ${
-              copied ? 'bg-emerald-500 hover:bg-emerald-600' : 'bg-blue-600 hover:bg-blue-700'
-            }`}
-          >
-            {copied ? <Check className="w-5 h-5" /> : <Copy className="w-5 h-5" />}
-            {copied ? 'Copiado para a área de transferência!' : 'Copiar Email Formatado'}
-          </button>
-        </div>
-      </div>
-
-      {/* Direita: Preview do Email */}
-      <div className="flex-1 bg-white rounded-2xl shadow-sm border border-gray-200 flex flex-col h-[calc(100vh-140px)]">
-        <div className="p-5 border-b border-gray-100 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center">
-              <FileText className="w-5 h-5 text-blue-600" />
-            </div>
-            <div>
-              <h3 className="font-bold text-gray-900 leading-tight">Pré-visualização</h3>
-              <p className="text-xs text-gray-500">O que o cliente vai receber</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="p-8 flex-1 overflow-y-auto bg-gray-50/30">
-          <div className="max-w-2xl mx-auto bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
-            {/* Subject Line */}
-            <div className="px-6 py-4 border-b border-gray-100 bg-gray-50">
-              <div className="flex gap-4">
-                <span className="text-sm font-semibold text-gray-500 w-16">Assunto:</span>
-                <span className="text-sm font-bold text-gray-900">{getSubject()}</span>
+        {/* Direita: Preview do Email */}
+        <div className="col-span-1 lg:col-span-2 space-y-4">
+          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden flex flex-col h-full">
+            <div className="bg-gray-50 px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+              <div>
+                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Pré-visualização do Assunto</p>
+                <p className="text-sm font-bold text-gray-900">{getSubject()}</p>
               </div>
+              <button 
+                onClick={() => {
+                  navigator.clipboard.writeText(getSubject());
+                  toast.success('Assunto copiado');
+                }}
+                className="p-1.5 hover:bg-gray-200 rounded-md text-gray-500 transition-colors"
+                title="Copiar Assunto"
+              >
+                <Copy className="w-4 h-4" />
+              </button>
             </div>
             
-            {/* Body */}
-            <div 
-              className="px-6 py-8"
-              dangerouslySetInnerHTML={{ __html: generateEmailHtml() }}
-            />
+            <div className="p-8 overflow-y-auto bg-white flex-1">
+              <div 
+                className="prose prose-sm max-w-none text-gray-800"
+                dangerouslySetInnerHTML={{ __html: generateEmailHtml() }}
+              />
+            </div>
           </div>
         </div>
+
       </div>
     </div>
   );
