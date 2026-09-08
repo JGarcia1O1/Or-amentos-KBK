@@ -133,6 +133,18 @@ export default function OfficialQuotePdfModal() {
                     {quote.clientNif}
                   </div>
                 )}
+                {quote.clientPhone && (
+                  <div>
+                    <span className="font-bold">Telemóvel:</span>{' '}
+                    {quote.clientPhone}
+                  </div>
+                )}
+                {quote.clientEmail && (
+                  <div>
+                    <span className="font-bold">Email:</span>{' '}
+                    {quote.clientEmail}
+                  </div>
+                )}
                 {quote.clientAddress && (
                   <div className="col-span-2">
                     <span className="font-bold">Morada:</span>{' '}

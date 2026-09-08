@@ -92,7 +92,7 @@ export default function QuoteEditor() {
     });
   };
 
-  // Quando muda o cliente, preenche automaticamente NIF e Morada
+  // Quando muda o cliente, preenche automaticamente os seus dados
   const handleClientChange = (clientName: string) => {
     const client = clients.find(c => c.name === clientName);
     updateSelectedQuote({
@@ -100,6 +100,8 @@ export default function QuoteEditor() {
       clientName,
       clientNif: client ? client.nif : quote.clientNif,
       clientAddress: client ? client.address : quote.clientAddress,
+      clientPhone: client ? client.phone : quote.clientPhone,
+      clientEmail: client ? client.email : quote.clientEmail,
     });
   };
 
@@ -544,6 +546,32 @@ export default function QuoteEditor() {
               value={quote.projectName || ''}
               onChange={e => handleTopFieldChange('projectName', e.target.value)}
               placeholder="Ex: Residência da Boavista"
+              className="w-full bg-gray-50 border border-gray-200 rounded-lg p-2 outline-none"
+            />
+          </div>
+
+          <div className="md:col-span-2">
+            <label className="block text-gray-500 font-bold mb-1">
+              Telemóvel do Cliente
+            </label>
+            <input
+              type="text"
+              value={quote.clientPhone || ''}
+              onChange={e => handleTopFieldChange('clientPhone', e.target.value)}
+              placeholder="Ex: 910 000 000"
+              className="w-full bg-gray-50 border border-gray-200 rounded-lg p-2 outline-none"
+            />
+          </div>
+
+          <div className="md:col-span-2">
+            <label className="block text-gray-500 font-bold mb-1">
+              Email do Cliente
+            </label>
+            <input
+              type="email"
+              value={quote.clientEmail || ''}
+              onChange={e => handleTopFieldChange('clientEmail', e.target.value)}
+              placeholder="Ex: cliente@email.com"
               className="w-full bg-gray-50 border border-gray-200 rounded-lg p-2 outline-none"
             />
           </div>
