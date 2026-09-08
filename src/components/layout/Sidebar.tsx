@@ -2,7 +2,8 @@
 
 import React, { useState } from 'react';
 import { useApp } from '@/context/AppContext';
-import { ClipboardList, 
+import { ClipboardList,
+  Hammer, 
   FileSpreadsheet,
   Users,
   Layers,

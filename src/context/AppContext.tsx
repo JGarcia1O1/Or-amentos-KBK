@@ -37,8 +37,8 @@ import {
 
 interface AppContextType {
   // Navegação e Utilizador
-  currentView: 'dashboard' | 'visits-list' | 'visit-editor' | 'quotes-list' | 'quote-editor' | 'clients' | 'materials' | 'settings' | 'emails';
-  setCurrentView: (view: 'dashboard' | 'visits-list' | 'visit-editor' | 'quotes-list' | 'quote-editor' | 'clients' | 'materials' | 'settings' | 'emails') => void;
+  currentView: 'dashboard' | 'obras' | 'visits-list' | 'visit-editor' | 'quotes-list' | 'quote-editor' | 'clients' | 'materials' | 'settings' | 'emails';
+  setCurrentView: (view: 'dashboard' | 'obras' | 'visits-list' | 'visit-editor' | 'quotes-list' | 'quote-editor' | 'clients' | 'materials' | 'settings' | 'emails') => void;
   currentUser: string;
   setCurrentUser: (user: string) => void;
   userRole: UserRole;
@@ -141,7 +141,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setIsMounted(true);
   }, []);
 
-  const [currentView, setCurrentView] = useState<'dashboard' | 'visits-list' | 'visit-editor' | 'quotes-list' | 'quote-editor' | 'clients' | 'materials' | 'settings' | 'emails'>('quotes-list');
+  const [currentView, setCurrentView] = useState<'dashboard' | 'obras' | 'visits-list' | 'visit-editor' | 'quotes-list' | 'quote-editor' | 'clients' | 'materials' | 'settings' | 'emails'>('quotes-list');
   const [currentUser, setCurrentUser] = useState<string>('A Carregar...');
   const [userRole, setUserRole] = useState<UserRole>('admin');
 
