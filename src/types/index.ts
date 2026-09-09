@@ -25,12 +25,15 @@ export interface Client {
 
 export interface Material {
   id?: string;
-  code: string;
-  name: string;
-  length: number; // mm
-  width: number;  // mm
-  thickness: number; // mm
-  price: number;  // € por chapa
+  code: string; // Referência
+  name: string; // Designação
+  length?: number; // mm (opcional agora)
+  width?: number;  // mm (opcional agora)
+  thickness?: number; // mm (opcional agora)
+  price: number;  // Preço unitário
+  unit?: string;  // Unidade (ex: un, m2)
+  quantity?: number; // Quantidade em armazém
+  total?: number; // Valor Total
   isActive?: boolean;
 }
 

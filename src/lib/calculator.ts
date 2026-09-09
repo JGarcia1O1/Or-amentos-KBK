@@ -15,19 +15,20 @@ import { Material, Quote, QuoteItem, TechnicalOperation, TechnicalPart } from '@
  */
 export function calculatePartYield(
   part: { length: number; width: number },
-  material: { length: number; width: number }
+  material: { length?: number; width?: number }
 ): number {
-  const x = material.length;
-  const y = material.width;
-  const c = part.length;
-  const l = part.width;
+  const x = material.length || 2440; // Default to 2440mm if missing
+  const y = material.width || 1220; // Default to 1220mm if missing
 
-  if (c <= 0 || l <= 0 || x <= 0 || y <= 0) return 1;
+  const comp = part.length;
+  const larg = part.width;
 
-  const option1 = Math.floor(x / c) * Math.floor(y / l);
-  const option2 = Math.floor(x / l) * Math.floor(y / c);
+  if (comp <= 0 || larg <= 0 || x <= 0 || y <= 0) return 0;
 
-  return Math.max(1, Math.max(option1, option2));
+  const opt1 = Math.floor(x / comp) * Math.floor(y / larg);
+  const opt2 = Math.floor(x / larg) * Math.floor(y / comp);
+
+  return Math.max(opt1, opt2);
 }
 
 /**
@@ -35,10 +36,10 @@ export function calculatePartYield(
  */
 export function calculatePartMaterialCost(
   part: { length: number; width: number; qty: number },
-  material: { length: number; width: number; price: number }
+  material: { length?: number; width?: number; price: number }
 ): { yieldParts: number; sheetsUsed: number; cost: number } {
   const yieldParts = calculatePartYield(part, material);
-  const sheetsUsed = part.qty / yieldParts;
+  const sheetsUsed = yieldParts > 0 ? part.qty / yieldParts : 0;
   const cost = sheetsUsed * material.price;
 
   return { yieldParts, sheetsUsed, cost };

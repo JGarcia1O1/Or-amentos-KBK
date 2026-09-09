@@ -19,6 +19,7 @@ import {
   calculateQuoteMarginPercent,
 } from '@/lib/calculator';
 import TechnicalCalculatorModal from './TechnicalCalculatorModal';
+import { SearchableMaterialDropdown } from '@/components/ui/SearchableMaterialDropdown';
 import {
   ArrowLeft,
   Calculator,
@@ -90,6 +91,22 @@ export default function QuoteEditor() {
       ...quote,
       [field]: val,
     });
+  };
+
+  const handleStatusChange = (newStatus: QuoteStatus) => {
+    if (newStatus === 'Adjudicado' && quote.status !== 'Adjudicado') {
+      confirmAction(
+        'Aprovar Orçamento e Abater Stock',
+        'Deseja aprovar este orçamento? Esta ação irá abater automaticamente as chapas e materiais utilizados ao stock do armazém.',
+        () => {
+          handleTopFieldChange('status', newStatus);
+          // O abatimento na BD será executado aqui via API ou Supabase RPC
+          // Assim que a tabela estiver devidamente migrada.
+        }
+      );
+    } else {
+      handleTopFieldChange('status', newStatus);
+    }
   };
 
   // Quando muda o cliente, preenche automaticamente os seus dados
@@ -447,9 +464,7 @@ export default function QuoteEditor() {
               <label className="text-xs text-gray-400 font-medium">Estado:</label>
               <select
                 value={quote.status}
-                onChange={e =>
-                  handleTopFieldChange('status', e.target.value as QuoteStatus)
-                }
+                onChange={e => handleStatusChange(e.target.value as QuoteStatus)}
                 className="text-xs font-bold bg-gray-50 border border-gray-200 rounded-lg px-2.5 py-1 outline-none cursor-pointer"
               >
                 <option value="Rascunho">Rascunho</option>
@@ -933,22 +948,16 @@ export default function QuoteEditor() {
                                       <Layers className="w-3.5 h-3.5 text-gray-500" />
                                       <span>Chapa / Material</span>
                                     </div>
-                                    <select
+                                    <SearchableMaterialDropdown
+                                      materials={materials}
                                       value={autoCfg.materialCode}
-                                      onChange={e =>
+                                      onChange={(val) => 
                                         handleUpdateItemAutomaticConfig(cIdx, iIdx, {
                                           ...autoCfg,
-                                          materialCode: e.target.value,
+                                          materialCode: val,
                                         })
                                       }
-                                      className="w-full bg-white border border-gray-200 rounded p-1.5 font-semibold text-gray-900 outline-none"
-                                    >
-                                      {materials.map(m => (
-                                        <option key={m.code} value={m.code}>
-                                          {m.name} ({m.price} €)
-                                        </option>
-                                      ))}
-                                    </select>
+                                    />
                                     <div className="flex items-center justify-between pt-1">
                                       <span className="text-gray-500">Chapas Usadas:</span>
                                       <input
