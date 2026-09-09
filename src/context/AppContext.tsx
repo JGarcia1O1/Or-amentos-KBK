@@ -399,10 +399,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   // Initial load & Polling for Excel changes
   useEffect(() => {
-        const fetchCatalog = async () => {
+    const fetchCatalog = async () => {
       try {
         const [mRes, hRes, wRes, eRes, cRes, compRes] = await Promise.all([
-          supabase.from('materials').select('*').order('created_at', { ascending: true }),
+          supabase.from('materials').select('*').limit(5000).order('created_at', { ascending: true }),
           supabase.from('hardware').select('*').order('created_at', { ascending: true }),
           supabase.from('workstations').select('*').order('created_at', { ascending: true }),
           supabase.from('edges').select('*').order('created_at', { ascending: true }),
