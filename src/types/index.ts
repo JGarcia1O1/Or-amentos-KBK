@@ -23,19 +23,20 @@ export interface Client {
   notes?: string;
 }
 
-export interface Material {
-  id?: string;
-  code: string; // Referência
-  name: string; // Designação
-  length?: number; // mm (opcional agora)
-  width?: number;  // mm (opcional agora)
-  thickness?: number; // mm (opcional agora)
-  price: number;  // Preço unitário
-  unit?: string;  // Unidade (ex: un, m2)
-  quantity?: number; // Quantidade em armazém
-  total?: number; // Valor Total
-  isActive?: boolean;
-}
+  export interface Material {
+    id?: string;
+    code: string; // Referência
+    name: string; // Designação
+    length?: number; // mm (opcional agora)
+    width?: number;  // mm (opcional agora)
+    thickness?: number; // mm (opcional agora)
+    price: number;  // Preço unitário
+    unit?: string;  // Unidade (ex: un, m2)
+    quantity?: number; // Quantidade em armazém
+    warehouse?: number; // Armazém
+    total?: number; // Valor Total
+    isActive?: boolean;
+  }
 
 export interface Workstation {
   id?: string;
