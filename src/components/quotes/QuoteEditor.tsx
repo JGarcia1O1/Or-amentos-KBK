@@ -2,6 +2,8 @@
 
 import React, { useState } from 'react';
 import { useApp } from '@/context/AppContext';
+import { toast } from 'sonner';
+import { supabase } from '@/lib/supabase';
 import {
   Quote,
   QuoteChapter,
@@ -45,6 +47,7 @@ export default function QuoteEditor() {
     confirmAction,
     clients,
     materials,
+    setMaterials,
     workstations,
     hardware,
     edges,
@@ -98,10 +101,67 @@ export default function QuoteEditor() {
       confirmAction(
         'Aprovar Orçamento e Abater Stock',
         'Deseja aprovar este orçamento? Esta ação irá abater automaticamente as chapas e materiais utilizados ao stock do armazém.',
-        () => {
+        async () => {
           handleTopFieldChange('status', newStatus);
-          // O abatimento na BD será executado aqui via API ou Supabase RPC
-          // Assim que a tabela estiver devidamente migrada.
+          
+          try {
+            // Calcular materiais utilizados no modo automático
+            const usedMaterials: Record<string, number> = {};
+            
+            quote.chapters.forEach(ch => {
+              ch.items.forEach(item => {
+                if (item.calculationMode === 'automatic' && item.automaticConfig) {
+                  const code = item.automaticConfig.materialCode;
+                  const qty = item.quantity || 1;
+                  const sheetsPerUnit = item.automaticConfig.sheetUsage || 0;
+                  const totalSheets = qty * sheetsPerUnit;
+                  
+                  if (code && totalSheets > 0) {
+                    usedMaterials[code] = (usedMaterials[code] || 0) + totalSheets;
+                  }
+                }
+              });
+            });
+
+            const codes = Object.keys(usedMaterials);
+            if (codes.length === 0) {
+              toast.success('Estado atualizado. (Nenhum material automático para abater)');
+              return;
+            }
+
+            // Fazer a atualização
+            let updatedMaterials = [...materials];
+
+            for (const code of codes) {
+              const deductAmount = usedMaterials[code];
+              const currentMat = updatedMaterials.find(m => m.code === code);
+              
+              if (currentMat) {
+                const currentStock = currentMat.quantity || 0;
+                // Prevenir valores negativos no front-end por segurança, mas permite se necessário dependendo das regras
+                const newQty = Math.max(0, currentStock - deductAmount);
+                
+                // Atualizar Supabase
+                const { error } = await supabase
+                  .from('materials')
+                  .update({ quantity: newQty })
+                  .eq('code', code);
+                  
+                if (error) throw error;
+                
+                // Atualizar Estado Local
+                updatedMaterials = updatedMaterials.map(m => 
+                  m.code === code ? { ...m, quantity: newQty } : m
+                );
+              }
+            }
+
+            setMaterials(updatedMaterials);
+            toast.success(`Stock de ${codes.length} materiais abatido com sucesso!`);
+          } catch (err: any) {
+            console.error('Erro ao abater stock:', err);
+            toast.error('Ocorreu um erro ao abater stock na Base de Dados.');
+          }
         }
       );
     } else {
