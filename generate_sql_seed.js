@@ -4,7 +4,7 @@ try {
   const rawData = fs.readFileSync('./backups/materials_backup.json', 'utf-8');
   const materials = JSON.parse(rawData);
 
-  let sql = 'INSERT INTO public.materials (code, name, unit, warehouse, quantity, price, total, is_active) VALUES\n';
+  let sql = 'INSERT INTO public.materials (code, name, unit, warehouse, quantity, price, total, is_active, length, width, thickness) VALUES\n';
 
   const values = materials.map(m => {
     // Escape single quotes in strings
@@ -16,8 +16,11 @@ try {
     const price = m.price || 0;
     const total = m.total || 0;
     const isActive = m.is_active ? 'true' : 'false';
+    const length = 0;
+    const width = 0;
+    const thickness = 0;
 
-    return `('${code}', '${name}', '${unit}', ${warehouse}, ${quantity}, ${price}, ${total}, ${isActive})`;
+    return `('${code}', '${name}', '${unit}', ${warehouse}, ${quantity}, ${price}, ${total}, ${isActive}, ${length}, ${width}, ${thickness})`;
   });
 
   sql += values.join(',\n') + ';';
