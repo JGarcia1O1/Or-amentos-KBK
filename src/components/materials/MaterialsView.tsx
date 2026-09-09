@@ -321,11 +321,14 @@ export default function MaterialsView() {
                 <tr>
                   <th className="py-3.5 px-4">Ref.</th>
                   <th className="py-3.5 px-4">Designação da Chapa</th>
-                  <th className="py-3.5 px-4 text-center">Comprimento</th>
-                  <th className="py-3.5 px-4 text-center">Largura</th>
-                  <th className="py-3.5 px-4 text-center">Espessura</th>
+                  <th className="py-3.5 px-4 text-center">Unidade</th>
+                  <th className="py-3.5 px-4 text-center">Armazém</th>
+                  <th className="py-3.5 px-4 text-center">Quantidade</th>
                   <th className="py-3.5 px-4 text-right font-bold text-gray-900">
-                    Preço / Chapa (€)
+                    Preço (Unit)
+                  </th>
+                  <th className="py-3.5 px-4 text-right font-bold text-gray-900">
+                    Total
                   </th>
                   <th className="py-3.5 px-4 text-center">Ações</th>
                 </tr>
@@ -340,13 +343,13 @@ export default function MaterialsView() {
                       {m.name}
                     </td>
                     <td className="py-3.5 px-4 text-center font-mono text-gray-600">
-                      {m.length} mm
+                      {m.unit || 'UN'}
                     </td>
                     <td className="py-3.5 px-4 text-center font-mono text-gray-600">
-                      {m.width} mm
+                      {m.warehouse || 1}
                     </td>
                     <td className="py-3.5 px-4 text-center font-mono text-gray-600">
-                      {m.thickness} mm
+                      {m.quantity || 0}
                     </td>
                     <td className="py-3.5 px-4 text-right font-mono font-bold text-gray-900">
                       <div className="inline-flex items-center gap-1">
@@ -368,6 +371,9 @@ export default function MaterialsView() {
                         />
                         <span>€</span>
                       </div>
+                    </td>
+                    <td className="py-3.5 px-4 text-right font-mono font-bold text-gray-900">
+                      {m.total ? m.total.toFixed(2) : (m.price * (m.quantity || 0)).toFixed(2)} €
                     </td>
                     <td className="py-3.5 px-4 text-center">
                       <button
@@ -629,15 +635,32 @@ export default function MaterialsView() {
               <div className="grid grid-cols-3 gap-3">
                 <div>
                   <label className="block text-gray-500 font-bold mb-1">
-                    Comp (mm)
+                    Unidade
                   </label>
                   <input
-                    type="number"
-                    value={newMaterial.length}
+                    type="text"
+                    value={newMaterial.unit || 'UN'}
                     onChange={e =>
                       setNewMaterial({
                         ...newMaterial,
-                        length: Number(e.target.value),
+                        unit: e.target.value,
+                      })
+                    }
+                    className="w-full bg-gray-50 border border-gray-200 rounded-lg p-2 font-mono"
+                    placeholder="UN"
+                  />
+                </div>
+                <div>
+                  <label className="block text-gray-500 font-bold mb-1">
+                    Armazém
+                  </label>
+                  <input
+                    type="number"
+                    value={newMaterial.warehouse || 1}
+                    onChange={e =>
+                      setNewMaterial({
+                        ...newMaterial,
+                        warehouse: Number(e.target.value),
                       })
                     }
                     className="w-full bg-gray-50 border border-gray-200 rounded-lg p-2 font-mono"
@@ -645,31 +668,16 @@ export default function MaterialsView() {
                 </div>
                 <div>
                   <label className="block text-gray-500 font-bold mb-1">
-                    Larg (mm)
+                    Quantidade
                   </label>
                   <input
                     type="number"
-                    value={newMaterial.width}
+                    step="0.01"
+                    value={newMaterial.quantity || 0}
                     onChange={e =>
                       setNewMaterial({
                         ...newMaterial,
-                        width: Number(e.target.value),
-                      })
-                    }
-                    className="w-full bg-gray-50 border border-gray-200 rounded-lg p-2 font-mono"
-                  />
-                </div>
-                <div>
-                  <label className="block text-gray-500 font-bold mb-1">
-                    Espessura (mm)
-                  </label>
-                  <input
-                    type="number"
-                    value={newMaterial.thickness}
-                    onChange={e =>
-                      setNewMaterial({
-                        ...newMaterial,
-                        thickness: Number(e.target.value),
+                        quantity: Number(e.target.value),
                       })
                     }
                     className="w-full bg-gray-50 border border-gray-200 rounded-lg p-2 font-mono"

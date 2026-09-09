@@ -401,8 +401,33 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const fetchCatalog = async () => {
       try {
-        const [mRes, hRes, wRes, eRes, cRes, compRes] = await Promise.all([
-          supabase.from('materials').select('*').limit(5000).order('created_at', { ascending: true }),
+        // Paginate materials to bypass 1000 max-rows limit on Supabase PostgREST
+        let allMaterials: Material[] = [];
+        let from = 0;
+        const step = 1000;
+        let fetchMore = true;
+
+        while (fetchMore) {
+          const { data, error } = await supabase
+            .from('materials')
+            .select('*')
+            .order('created_at', { ascending: true })
+            .range(from, from + step - 1);
+          
+          if (error) break;
+          if (data) {
+            allMaterials = [...allMaterials, ...data];
+            if (data.length < step) {
+              fetchMore = false;
+            } else {
+              from += step;
+            }
+          } else {
+            fetchMore = false;
+          }
+        }
+
+        const [hRes, wRes, eRes, cRes, compRes] = await Promise.all([
           supabase.from('hardware').select('*').order('created_at', { ascending: true }),
           supabase.from('workstations').select('*').order('created_at', { ascending: true }),
           supabase.from('edges').select('*').order('created_at', { ascending: true }),
@@ -410,7 +435,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           supabase.from('company_info').select('*').limit(1).single()
         ]);
 
-        if (mRes.data && mRes.data.length > 0) setMaterials(mRes.data);
+        if (allMaterials.length > 0) setMaterials(allMaterials);
         if (hRes.data && hRes.data.length > 0) setHardware(hRes.data);
         if (wRes.data && wRes.data.length > 0) setWorkstations(wRes.data);
         if (eRes.data && eRes.data.length > 0) {
