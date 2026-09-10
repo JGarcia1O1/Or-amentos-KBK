@@ -18,6 +18,8 @@ export interface Client {
   name: string;
   nif: string;
   address: string;
+  postalCode?: string;
+  city?: string;
   email: string;
   phone: string;
   notes?: string;
@@ -138,6 +140,8 @@ export interface Quote {
   clientName: string;
   clientNif: string;
   clientAddress: string;
+  clientPostalCode?: string;
+  clientCity?: string;
   clientEmail?: string;
   clientPhone?: string;
   date: string; // DD/MM/AAAA

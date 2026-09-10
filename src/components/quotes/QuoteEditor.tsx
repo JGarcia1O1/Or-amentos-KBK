@@ -177,6 +177,8 @@ export default function QuoteEditor() {
       clientName,
       clientNif: client ? client.nif : quote.clientNif,
       clientAddress: client ? client.address : quote.clientAddress,
+      clientPostalCode: client ? client.postalCode : quote.clientPostalCode,
+      clientCity: client ? client.city : quote.clientCity,
       clientPhone: client ? client.phone : quote.clientPhone,
       clientEmail: client ? client.email : quote.clientEmail,
     });
@@ -601,15 +603,31 @@ export default function QuoteEditor() {
 
           <div className="md:col-span-2">
             <label className="block text-gray-500 font-bold mb-1">
-              Morada de Entrega / Obra
+              Morada de Obra / Faturação *
             </label>
             <input
               type="text"
-              value={quote.clientAddress}
+              value={quote.clientAddress || ''}
               onChange={e => handleTopFieldChange('clientAddress', e.target.value)}
-              placeholder="Morada completa da obra"
-              className="w-full bg-gray-50 border border-gray-200 rounded-lg p-2 outline-none"
+              placeholder="Morada de obra/faturação"
+              className="w-full bg-gray-50 border border-gray-200 rounded-lg p-2 outline-none mb-2"
             />
+            <div className="grid grid-cols-2 gap-2">
+              <input
+                type="text"
+                value={quote.clientPostalCode || ''}
+                onChange={e => handleTopFieldChange('clientPostalCode', e.target.value)}
+                placeholder="C. Postal (Ex: 4000-123)"
+                className="w-full bg-gray-50 border border-gray-200 rounded-lg p-2 outline-none font-mono text-sm"
+              />
+              <input
+                type="text"
+                value={quote.clientCity || ''}
+                onChange={e => handleTopFieldChange('clientCity', e.target.value)}
+                placeholder="Localidade (Ex: Porto)"
+                className="w-full bg-gray-50 border border-gray-200 rounded-lg p-2 outline-none text-sm"
+              />
+            </div>
           </div>
 
           <div className="md:col-span-2">

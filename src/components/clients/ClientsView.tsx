@@ -14,6 +14,8 @@ export default function ClientsView() {
     name: '',
     nif: '',
     address: '',
+    postalCode: '',
+    city: '',
     email: '',
     phone: '',
     notes: '',
@@ -21,7 +23,7 @@ export default function ClientsView() {
 
   const handleOpenAdd = () => {
     setEditingId(null);
-    setFormData({ name: '', nif: '', address: '', email: '', phone: '', notes: '' });
+    setFormData({ name: '', nif: '', address: '', postalCode: '', city: '', email: '', phone: '', notes: '' });
     setShowModal(true);
   };
 
@@ -242,9 +244,29 @@ export default function ClientsView() {
                   onChange={e =>
                     setFormData({ ...formData, address: e.target.value })
                   }
-                  className="w-full bg-gray-50 border border-gray-200 rounded-lg p-2 outline-none"
-                  placeholder="Rua, Código Postal, Localidade"
+                  className="w-full bg-gray-50 border border-gray-200 rounded-lg p-2 outline-none mb-2"
+                  placeholder="Ex: Rua de Santo António, 123"
                 />
+                <div className="grid grid-cols-2 gap-2">
+                  <input
+                    type="text"
+                    value={formData.postalCode || ''}
+                    onChange={e =>
+                      setFormData({ ...formData, postalCode: e.target.value })
+                    }
+                    className="w-full bg-gray-50 border border-gray-200 rounded-lg p-2 outline-none font-mono text-sm"
+                    placeholder="C. Postal (Ex: 4000-123)"
+                  />
+                  <input
+                    type="text"
+                    value={formData.city || ''}
+                    onChange={e =>
+                      setFormData({ ...formData, city: e.target.value })
+                    }
+                    className="w-full bg-gray-50 border border-gray-200 rounded-lg p-2 outline-none text-sm"
+                    placeholder="Localidade (Ex: Porto)"
+                  />
+                </div>
               </div>
 
               <div className="grid grid-cols-2 gap-2">

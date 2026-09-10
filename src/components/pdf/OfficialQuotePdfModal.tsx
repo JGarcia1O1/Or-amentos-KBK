@@ -149,6 +149,12 @@ export default function OfficialQuotePdfModal() {
                   <div className="col-span-2">
                     <span className="font-bold">Morada:</span>{' '}
                     {quote.clientAddress}
+                    {(quote.clientPostalCode || quote.clientCity) && (
+                      <div>
+                        <span className="font-bold opacity-0">Morada:</span>{' '}
+                        {quote.clientPostalCode ? `${quote.clientPostalCode} ` : ''}{quote.clientCity || ''}
+                      </div>
+                    )}
                   </div>
                 )}
                 {quote.projectName && (
