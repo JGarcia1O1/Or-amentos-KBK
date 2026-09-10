@@ -225,7 +225,7 @@ export default function OfficialQuotePdfModal() {
                           const pdfCode = `${chapIdx + 1}.${itemIdx + 1}`;
 
                           return (
-                            <tr key={item.id} className="align-top bg-white">
+                            <tr key={item.id} className="align-top bg-white border-b border-gray-100 last-of-type:border-b-0">
                               <td className="py-3 px-2 text-center font-mono text-[10px] text-gray-500">
                                 {pdfCode}
                               </td>
