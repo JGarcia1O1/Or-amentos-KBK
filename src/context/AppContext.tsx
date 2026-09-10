@@ -466,13 +466,37 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const addClient = (client: Client) => {
     const newClient = { ...client, id: client.id || `c-${Date.now()}` };
     setClients(prev => [...prev, newClient]);
-    supabase.from('clients').insert([newClient]).then();
+    
+    const dbPayload = {
+      id: newClient.id,
+      name: newClient.name,
+      nif: newClient.nif,
+      address: newClient.address,
+      postal_code: newClient.postalCode,
+      city: newClient.city,
+      email: newClient.email,
+      phone: newClient.phone,
+      notes: newClient.notes
+    };
+    
+    supabase.from('clients').insert([dbPayload]).then(res => {
+      if (res.error) console.error('Erro ao adicionar cliente', res.error);
+    });
     toast.success('Cliente adicionado com sucesso');
   };
 
   const updateClient = (id: string, updated: Partial<Client>) => {
     setClients(prev => prev.map(c => (c.id === id ? { ...c, ...updated } : c)));
-    supabase.from('clients').update(updated).eq('id', id).then();
+    
+    const dbPayload: any = { ...updated };
+    if ('postalCode' in dbPayload) {
+      dbPayload.postal_code = dbPayload.postalCode;
+      delete dbPayload.postalCode;
+    }
+    
+    supabase.from('clients').update(dbPayload).eq('id', id).then(res => {
+      if (res.error) console.error('Erro ao atualizar cliente', res.error);
+    });
     toast.success('Cliente atualizado com sucesso');
   };
 
