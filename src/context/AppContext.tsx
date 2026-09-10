@@ -666,8 +666,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       debounce(async (quote: Quote) => {
         try {
           await QuoteService.save(quote);
-        } catch (error) {
-          toast.error('Erro ao guardar orçamento automaticamente');
+        } catch (error: any) {
+          console.error("Autosave error:", error);
+          toast.error('Erro ao guardar: ' + (error?.message || 'Erro desconhecido'));
         }
       }, 1000),
     []
