@@ -445,7 +445,20 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           }));
           setEdges(mappedEdges);
         }
-        if (cRes.data && cRes.data.length > 0) setClients(cRes.data);
+        if (cRes.data && cRes.data.length > 0) {
+          const mappedClients = cRes.data.map(client => ({
+            id: client.id,
+            name: client.name,
+            nif: client.nif,
+            address: client.address,
+            postalCode: client.postal_code || client.postalCode,
+            city: client.city,
+            email: client.email,
+            phone: client.phone,
+            notes: client.notes
+          }));
+          setClients(mappedClients);
+        }
         if (compRes.data) setCompanyInfo(compRes.data);
 
         // Fetch quotes
