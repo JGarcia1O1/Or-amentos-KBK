@@ -14,6 +14,7 @@ import { ClipboardList,
   UserCheck, Settings, LogOut, Mail,
  } from 'lucide-react';
 
+import { ModuleKey } from '@/types';
 import ProfileSettingsModal from './ProfileSettingsModal';
 
 export default function Sidebar() {
@@ -29,7 +30,18 @@ export default function Sidebar() {
     setSelectedQuote,
     userRole,
     can,
+    permissions,
+    isAdmin,
+    pendingApprovals,
   } = useApp();
+
+  // Etiqueta para os módulos em que o utilizador só pode consultar
+  const viewTag = (m: ModuleKey) =>
+    permissions[m] === 'view' ? (
+      <span className="text-[9px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded font-semibold shrink-0 ml-2">
+        só ver
+      </span>
+    ) : null;
 
   return (
     <aside className="w-64 bg-white border-r border-gray-200 flex flex-col justify-between flex-shrink-0 select-none z-20 h-screen">
@@ -73,6 +85,7 @@ export default function Sidebar() {
               <Sliders className="w-4 h-4" />
               <span>Gestão & Analytics</span>
             </div>
+            {viewTag('dashboard')}
           </button>
           )}
 
@@ -90,6 +103,7 @@ export default function Sidebar() {
               <Hammer className="w-4 h-4" />
               <span>Produção & Obras</span>
             </div>
+            {viewTag('obras')}
           </button>
           )}
 
@@ -111,6 +125,9 @@ export default function Sidebar() {
               <FileSpreadsheet className="w-4 h-4" />
               <span>Orçamentos</span>
             </div>
+            {permissions.quotes === 'view' ? (
+              viewTag('quotes')
+            ) : (
             <span
               className={`text-[10px] px-2 py-0.5 rounded-full font-semibold ${
                 currentView.startsWith('quote')
@@ -120,6 +137,7 @@ export default function Sidebar() {
             >
               {quotes.length}
             </span>
+            )}
           </button>
           )}
 
@@ -140,6 +158,7 @@ export default function Sidebar() {
                   <ClipboardList className="w-4 h-4" />
                   <span>Fichas de Obra</span>
                 </div>
+                {viewTag('visits')}
               </button>
             )}
             
@@ -157,9 +176,13 @@ export default function Sidebar() {
                 <Users className="w-4 h-4" />
                 <span>Clientes</span>
               </div>
+              {permissions.clients === 'view' ? (
+                viewTag('clients')
+              ) : (
               <span className="text-[10px] bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full font-semibold">
                 {clients.length}
               </span>
+              )}
             </button>
           )}
 
@@ -178,9 +201,13 @@ export default function Sidebar() {
                 <Layers className="w-4 h-4 shrink-0" />
                 <span className="truncate">Chapas, Materiais & Máquinas</span>
               </div>
+              {permissions.materials === 'view' ? (
+                viewTag('materials')
+              ) : (
               <span className="text-[10px] bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full font-semibold shrink-0 ml-2">
                 {materials.length}
               </span>
+              )}
             </button>
           )}
 
@@ -200,6 +227,7 @@ export default function Sidebar() {
                 <Mail className="w-4 h-4" />
                 <span>Emails Automáticos</span>
               </div>
+              {viewTag('emails')}
             </button>
           )}
 
@@ -216,6 +244,15 @@ export default function Sidebar() {
             >
               <Sliders className="w-4 h-4 shrink-0" />
               <span className="truncate">Configurações Gerais</span>
+              {isAdmin && pendingApprovals.length > 0 && (
+                <span
+                  className="ml-auto text-[9px] bg-red-500 text-white px-1.5 py-0.5 rounded-full font-bold shrink-0"
+                  title="Pedidos de alteração à espera de aprovação"
+                >
+                  {pendingApprovals.length}
+                </span>
+              )}
+              {viewTag('settings')}
             </button>
           )}
 

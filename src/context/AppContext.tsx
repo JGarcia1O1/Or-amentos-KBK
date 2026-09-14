@@ -244,22 +244,45 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     };
   }, [loadUserProfile]);
 
-  const [pendingApprovals, setPendingApprovals] = useState<PendingApproval[]>(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('kubik_pending_approvals');
-      if (saved) {
-        try { return JSON.parse(saved); } catch (e) { console.error(e); }
-      }
-    }
-    return [];
+  // ============================================================
+  // PEDIDOS DE APROVAÇÃO
+  // Vivem na tabela public.pending_approvals, partilhada entre todos.
+  // (Antes viviam no localStorage de quem pedia, pelo que nunca chegavam
+  //  ao administrador — a mensagem de "enviado" era falsa.)
+  // ============================================================
+  const [pendingApprovals, setPendingApprovals] = useState<PendingApproval[]>([]);
+
+  const mapPendingFromDb = (row: any): PendingApproval => ({
+    id: row.id,
+    type: row.type,
+    data: row.data,
+    requestedBy: row.requested_by_name || 'Utilizador',
+    requestedById: row.requested_by,
+    status: row.status,
+    createdAt: row.created_at,
   });
 
-  // Persistir aprovações
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('kubik_pending_approvals', JSON.stringify(pendingApprovals));
+  const loadPendingApprovals = React.useCallback(async () => {
+    if (!currentUserId) {
+      setPendingApprovals([]);
+      return;
     }
-  }, [pendingApprovals]);
+    const { data, error } = await supabase
+      .from('pending_approvals')
+      .select('id, type, data, requested_by, requested_by_name, status, created_at')
+      .eq('status', 'pending')
+      .order('created_at', { ascending: true });
+
+    if (error) {
+      console.error('[KUBIK] Falha ao carregar pedidos de aprovação:', error.message);
+      return;
+    }
+    setPendingApprovals((data || []).map(mapPendingFromDb));
+  }, [currentUserId]);
+
+  useEffect(() => {
+    loadPendingApprovals();
+  }, [loadPendingApprovals]);
 
   // Dados da Empresa (Editáveis com persistência local)
   const [companyInfo, setCompanyInfo] = useState<CompanyInfo>(() => {
@@ -585,7 +608,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   // Ações de Materiais
   const addMaterial = (m: Material) => {
-    if (userRole === 'gestor') {
+    if (needsApproval('materials')) {
       createPending('material_add', m);
     } else {
       setMaterials(prev => [...prev, m]);
@@ -594,7 +617,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   };
 
   const updateMaterialPrice = (code: string, newPrice: number) => {
-    if (userRole === 'gestor') {
+    if (needsApproval('materials')) {
       createPending('material_edit', { code, updated: { price: newPrice } });
     } else {
       setMaterials(prev => prev.map(m => (m.code === code ? { ...m, price: newPrice } : m)));
@@ -604,7 +627,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   const deleteMaterial = (code: string) => {
     confirmAction('Remover Material', 'Deseja remover esta chapa do catálogo de materiais?', () => {
-      if (userRole === 'gestor') {
+      if (needsApproval('materials')) {
         createPending('material_delete', { code });
       } else {
         setMaterials(prev => prev.filter(m => m.code !== code));
@@ -615,7 +638,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   // Ações de Ferragens
   const addHardware = (h: Hardware) => {
-    if (userRole === 'gestor') {
+    if (needsApproval('materials')) {
       createPending('hardware_add', h);
     } else {
       setHardware(prev => [...prev, h]);
@@ -624,7 +647,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   };
 
   const updateHardwarePrice = (code: string, price: number) => {
-    if (userRole === 'gestor') {
+    if (needsApproval('materials')) {
       createPending('hardware_edit', { code, updated: { price } });
     } else {
       setHardware(prev => prev.map(h => (h.code === code ? { ...h, price } : h)));
@@ -634,7 +657,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   const deleteHardware = (code: string) => {
     confirmAction('Remover Ferragem', 'Deseja remover esta ferragem do catálogo?', () => {
-      if (userRole === 'gestor') {
+      if (needsApproval('materials')) {
         createPending('hardware_delete', { code });
       } else {
         setHardware(prev => prev.filter(h => h.code !== code));
@@ -660,60 +683,160 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     });
   };
 
-  const approvePending = (id: string) => {
-    const pending = pendingApprovals.find(p => p.id === id);
-    if (!pending) return;
+  // Aplica a alteração pedida — no estado local E no Supabase.
+  // (Antes só mexia no estado local: aprovar um posto de trabalho ou os
+  //  dados da empresa não gravava nada e a alteração perdia-se.)
+  const applyPending = async (pending: PendingApproval): Promise<boolean> => {
+    try {
+      switch (pending.type) {
+        case 'workstation_add': {
+          const { error } = await supabase.from('workstations').insert([pending.data]);
+          if (error) throw error;
+          setWorkstations(prev => [...prev, pending.data]);
+          break;
+        }
+        case 'workstation_edit': {
+          const { error } = await supabase
+            .from('workstations').update(pending.data.updated).eq('code', pending.data.code);
+          if (error) throw error;
+          setWorkstations(prev =>
+            prev.map(ws => (ws.code === pending.data.code ? { ...ws, ...pending.data.updated } : ws))
+          );
+          break;
+        }
+        case 'workstation_delete': {
+          const { error } = await supabase.from('workstations').delete().eq('code', pending.data.code);
+          if (error) throw error;
+          setWorkstations(prev => prev.filter(ws => ws.code !== pending.data.code));
+          break;
+        }
+        case 'material_add': {
+          const { error } = await supabase.from('materials').insert([pending.data]);
+          if (error) throw error;
+          setMaterials(prev => [...prev, pending.data]);
+          break;
+        }
+        case 'material_edit': {
+          const { error } = await supabase
+            .from('materials').update(pending.data.updated).eq('code', pending.data.code);
+          if (error) throw error;
+          setMaterials(prev =>
+            prev.map(m => (m.code === pending.data.code ? { ...m, ...pending.data.updated } : m))
+          );
+          break;
+        }
+        case 'material_delete': {
+          const { error } = await supabase.from('materials').delete().eq('code', pending.data.code);
+          if (error) throw error;
+          setMaterials(prev => prev.filter(m => m.code !== pending.data.code));
+          break;
+        }
+        case 'hardware_add': {
+          const { error } = await supabase.from('hardware').insert([pending.data]);
+          if (error) throw error;
+          setHardware(prev => [...prev, pending.data]);
+          break;
+        }
+        case 'hardware_edit': {
+          const { error } = await supabase
+            .from('hardware').update(pending.data.updated).eq('code', pending.data.code);
+          if (error) throw error;
+          setHardware(prev =>
+            prev.map(h => (h.code === pending.data.code ? { ...h, ...pending.data.updated } : h))
+          );
+          break;
+        }
+        case 'hardware_delete': {
+          const { error } = await supabase.from('hardware').delete().eq('code', pending.data.code);
+          if (error) throw error;
+          setHardware(prev => prev.filter(h => h.code !== pending.data.code));
+          break;
+        }
+        case 'company_info_edit': {
+          setCompanyInfo(pending.data);
+          break;
+        }
+      }
+      return true;
+    } catch (err: any) {
+      console.error('[KUBIK] Falha ao aplicar pedido aprovado:', err?.message || err);
+      toast.error('A alteração não pôde ser aplicada. O pedido continua pendente.');
+      return false;
+    }
+  };
 
-    if (pending.type === 'workstation_add') {
-      setWorkstations(prev => [...prev, pending.data]);
-    } else if (pending.type === 'workstation_edit') {
-      setWorkstations(prev =>
-        prev.map(ws => (ws.code === pending.data.code ? { ...ws, ...pending.data.updated } : ws))
-      );
-    } else if (pending.type === 'workstation_delete') {
-      setWorkstations(prev => prev.filter(ws => ws.code !== pending.data.code));
-    } else if (pending.type === 'company_info_edit') {
-      setCompanyInfo(pending.data);
-    } else if (pending.type === 'material_add') {
-      setMaterials(prev => [...prev, pending.data]);
-    } else if (pending.type === 'material_edit') {
-      setMaterials(prev =>
-        prev.map(m => (m.code === pending.data.code ? { ...m, ...pending.data.updated } : m))
-      );
-    } else if (pending.type === 'material_delete') {
-      setMaterials(prev => prev.filter(m => m.code !== pending.data.code));
-    } else if (pending.type === 'hardware_add') {
-      setHardware(prev => [...prev, pending.data]);
-    } else if (pending.type === 'hardware_edit') {
-      setHardware(prev =>
-        prev.map(h => (h.code === pending.data.code ? { ...h, ...pending.data.updated } : h))
-      );
-    } else if (pending.type === 'hardware_delete') {
-      setHardware(prev => prev.filter(h => h.code !== pending.data.code));
+  const resolvePending = async (id: string, status: 'approved' | 'rejected') => {
+    const { error } = await supabase
+      .from('pending_approvals')
+      .update({
+        status,
+        resolved_by: currentUserId,
+        resolved_at: new Date().toISOString(),
+      })
+      .eq('id', id);
+
+    if (error) {
+      console.error('[KUBIK] Falha ao resolver pedido:', error.message);
+      toast.error('Não foi possível registar a decisão.');
+      return false;
     }
 
     setPendingApprovals(prev => prev.filter(p => p.id !== id));
+    return true;
   };
 
-  const rejectPending = (id: string) => {
-    setPendingApprovals(prev => prev.filter(p => p.id !== id));
+  const approvePending = async (id: string) => {
+    const pending = pendingApprovals.find(p => p.id === id);
+    if (!pending) return;
+
+    // Só marca como aprovado se a alteração tiver sido mesmo aplicada.
+    const applied = await applyPending(pending);
+    if (!applied) return;
+
+    const resolved = await resolvePending(id, 'approved');
+    if (resolved) toast.success('Alteração aprovada e aplicada.');
   };
 
-  const createPending = (type: PendingApproval['type'], data: any) => {
-    const newPending: PendingApproval = {
-      id: Math.random().toString(36).substr(2, 9),
-      type,
-      data,
-      requestedBy: currentUser,
-      createdAt: Date.now(),
-    };
-    setPendingApprovals(prev => [...prev, newPending]);
-    toast.info('A sua alteração foi enviada para aprovação do Administrador.');
+  const rejectPending = async (id: string) => {
+    const resolved = await resolvePending(id, 'rejected');
+    if (resolved) toast.info('Pedido rejeitado.');
   };
+
+  const createPending = async (type: PendingApproval['type'], data: any) => {
+    if (!currentUserId) {
+      toast.error('Sessão não identificada. Volta a entrar na plataforma.');
+      return;
+    }
+
+    const { data: row, error } = await supabase
+      .from('pending_approvals')
+      .insert({
+        type,
+        data,
+        requested_by: currentUserId,
+        requested_by_name: currentUser,
+      })
+      .select('id, type, data, requested_by, requested_by_name, status, created_at')
+      .single();
+
+    if (error) {
+      console.error('[KUBIK] Falha ao criar pedido de aprovação:', error.message);
+      toast.error('Não foi possível enviar o pedido. Tenta novamente.');
+      return;
+    }
+
+    setPendingApprovals(prev => [...prev, mapPendingFromDb(row)]);
+    toast.info('Pedido enviado. Um administrador vai rever a alteração.');
+  };
+
+  // Dispara um pedido de aprovação em vez da alteração direta quando o
+  // utilizador só tem 'apenas consultar' no módulo em causa.
+  const needsApproval = (module: ModuleKey) =>
+    can(module, 'view') && !can(module, 'edit');
 
   // Ações de Postos de Trabalho & Máquinas
   const addWorkstation = (ws: Workstation) => {
-    if (userRole === 'gestor') {
+    if (needsApproval('materials')) {
       createPending('workstation_add', ws);
     } else {
       setWorkstations(prev => [...prev, ws]);
@@ -722,7 +845,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   };
 
   const updateWorkstation = (code: string, updated: Partial<Workstation>) => {
-    if (userRole === 'gestor') {
+    if (needsApproval('materials')) {
       createPending('workstation_edit', { code, updated });
     } else {
       setWorkstations(prev =>
@@ -732,7 +855,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   };
 
   const updateWorkstationRate = (code: string, newRate: number) => {
-    if (userRole === 'gestor') {
+    if (needsApproval('materials')) {
       createPending('workstation_edit', { code, updated: { rate: newRate } });
     } else {
       setWorkstations(prev =>
@@ -743,7 +866,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   const deleteWorkstation = (code: string) => {
     confirmAction('Remover Posto de Trabalho', 'Tem a certeza que deseja eliminar esta máquina/posto de trabalho?', () => {
-      if (userRole === 'gestor') {
+      if (needsApproval('materials')) {
         createPending('workstation_delete', { code });
       } else {
         setWorkstations(prev => prev.filter(ws => ws.code !== code));
@@ -752,7 +875,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   };
 
   const updateCompanyInfo = (info: CompanyInfo) => {
-    if (userRole === 'gestor') {
+    if (needsApproval('settings')) {
       createPending('company_info_edit', info);
     } else {
       setCompanyInfo(info);

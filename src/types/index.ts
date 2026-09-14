@@ -43,8 +43,10 @@ export interface PendingApproval {
     | 'material_add' | 'material_edit' | 'material_delete'
     | 'hardware_add' | 'hardware_edit' | 'hardware_delete';
   data: any;
-  requestedBy: string;
-  createdAt: number;
+  requestedBy: string;        // requested_by_name — nome de quem pediu
+  requestedById?: string;     // requested_by — id da conta que pediu
+  status?: 'pending' | 'approved' | 'rejected';
+  createdAt: string;          // created_at (ISO)
 }
 
 export interface Client {

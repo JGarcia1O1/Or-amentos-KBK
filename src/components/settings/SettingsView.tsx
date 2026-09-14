@@ -58,7 +58,7 @@ export default function SettingsView() {
       {/* ============================================================ */}
       {/* 0. APROVAÇÕES PENDENTES (Apenas Administrador)                */}
       {/* ============================================================ */}
-      {userRole === 'admin' && pendingApprovals.length > 0 && (
+      {isAdmin && pendingApprovals.length > 0 && (
         <div className="bg-amber-50 border border-amber-200 rounded-xl p-5 shadow-sm">
           <div className="flex items-center justify-between mb-4">
             <h3 className="font-bold text-amber-900 flex items-center gap-2">
