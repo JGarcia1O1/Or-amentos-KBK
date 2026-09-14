@@ -27,14 +27,14 @@ ALTER TABLE public.user_roles ADD COLUMN IF NOT EXISTS is_active    boolean NOT 
 ALTER TABLE public.user_roles ADD COLUMN IF NOT EXISTS created_at   timestamptz NOT NULL DEFAULT now();
 ALTER TABLE public.user_roles ADD COLUMN IF NOT EXISTS updated_at   timestamptz NOT NULL DEFAULT now();
 
-DO $$
-BEGIN
-  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'user_roles_role_check') THEN
-    ALTER TABLE public.user_roles
-      ADD CONSTRAINT user_roles_role_check
-      CHECK (role IN ('admin', 'gestor', 'trabalhador'));
-  END IF;
-END $$;
+-- A tabela user_roles já existia em produção com uma restrição de mesmo nome
+-- que NÃO aceitava o valor 'trabalhador'. Substitui-se pela correta.
+-- É apenas uma restrição: nenhuma coluna ou dado é perdido, e é reversível.
+ALTER TABLE public.user_roles DROP CONSTRAINT IF EXISTS user_roles_role_check;
+
+ALTER TABLE public.user_roles
+  ADD CONSTRAINT user_roles_role_check
+  CHECK (role IN ('admin', 'gestor', 'trabalhador'));
 
 
 -- =====================================================================
