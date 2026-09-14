@@ -17,7 +17,16 @@ import {
   CompanyInfo,
   UserRole,
   PendingApproval,
+  AppUser,
+  ModuleKey,
+  PermissionLevel,
+  PermissionMap,
 } from '@/types';
+import {
+  effectivePermissions,
+  hasAccess,
+  mapUserFromDb,
+} from '@/lib/permissions';
 import {
   COMPANY_INFO,
   INITIAL_CLIENTS,
@@ -43,6 +52,15 @@ interface AppContextType {
   setCurrentUser: (user: string) => void;
   userRole: UserRole;
   setUserRole: (role: UserRole) => void;
+
+  // Permissões por Módulo (Gestão de Acessos)
+  currentUserId: string | null;
+  userProfile: AppUser | null;
+  permissions: PermissionMap;
+  permissionsLoaded: boolean;
+  isAdmin: boolean;
+  can: (module: ModuleKey, required?: PermissionLevel) => boolean;
+  refreshUserProfile: () => Promise<void>;
 
   // Aprovações (RBAC)
   pendingApprovals: PendingApproval[];
@@ -143,44 +161,88 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   const [currentView, setCurrentView] = useState<'dashboard' | 'obras' | 'visits-list' | 'visit-editor' | 'quotes-list' | 'quote-editor' | 'clients' | 'materials' | 'settings' | 'emails'>('quotes-list');
   const [currentUser, setCurrentUser] = useState<string>('A Carregar...');
-  const [userRole, setUserRole] = useState<UserRole>('admin');
+  const [userRole, setUserRole] = useState<UserRole>('trabalhador');
+
+  // ============================================================
+  // PERMISSÕES POR MÓDULO
+  // O perfil vive na tabela public.user_roles e é a fonte de verdade.
+  // Enquanto não carregar, o utilizador não tem acesso a nada — evita
+  // o "flash" de módulos a que afinal não tem direito.
+  // ============================================================
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [userProfile, setUserProfile] = useState<AppUser | null>(null);
+  const [permissionsLoaded, setPermissionsLoaded] = useState(false);
+
+  const permissions = useMemo(() => effectivePermissions(userProfile), [userProfile]);
+  const isAdmin = userProfile?.role === 'admin' && userProfile?.isActive === true;
+
+  const can = React.useCallback(
+    (module: ModuleKey, required: PermissionLevel = 'view') => hasAccess(permissions, module, required),
+    [permissions]
+  );
+
+  const loadUserProfile = React.useCallback(async (userId: string, fallbackName: string) => {
+    const { data, error } = await supabase
+      .from('user_roles')
+      .select('user_id, email, display_name, role, permissions, is_active, created_at, updated_at')
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    if (error) {
+      console.error('[KUBIK] Falha ao carregar permissões:', error.message);
+      setUserProfile(null);
+      setUserRole('trabalhador');
+      setPermissionsLoaded(true);
+      return;
+    }
+
+    if (!data) {
+      // Sem linha em user_roles: utilizador autenticado mas ainda sem acessos atribuídos.
+      console.warn('[KUBIK] Utilizador sem perfil de permissões atribuído.');
+      setUserProfile(null);
+      setUserRole('trabalhador');
+      setPermissionsLoaded(true);
+      return;
+    }
+
+    const profile = mapUserFromDb(data);
+    setUserProfile(profile);
+    setUserRole(profile.role);
+    setCurrentUser(profile.displayName || fallbackName);
+    setPermissionsLoaded(true);
+  }, []);
+
+  const refreshUserProfile = React.useCallback(async () => {
+    if (!currentUserId) return;
+    await loadUserProfile(currentUserId, currentUser);
+  }, [currentUserId, currentUser, loadUserProfile]);
 
   useEffect(() => {
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    const applySession = (session: any) => {
       if (session?.user?.email) {
-        setCurrentUser(session.user.user_metadata?.display_name || 'Utilizador KUBIK');
-        // Fetch role from Supabase DB
-        supabase.from('user_roles').select('role').eq('user_id', session.user.id).single()
-          .then(({ data }) => {
-             if (data && data.role === 'admin') setUserRole('admin');
-             else setUserRole('gestor'); // Fallback regular user
-          });
+        const fallbackName = session.user.user_metadata?.display_name || 'Utilizador KUBIK';
+        setCurrentUserId(session.user.id);
+        setCurrentUser(fallbackName);
+        loadUserProfile(session.user.id, fallbackName);
       } else {
+        setCurrentUserId(null);
         setCurrentUser('Não autenticado');
+        setUserProfile(null);
+        setUserRole('trabalhador');
+        setPermissionsLoaded(true);
       }
-    });
+    };
 
-    // Listen for changes
-    const { data: authListener } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        if (session?.user?.email) {
-          setCurrentUser(session.user.user_metadata?.display_name || 'Utilizador KUBIK');
-          supabase.from('user_roles').select('role').eq('user_id', session.user.id).single()
-            .then(({ data }) => {
-               if (data && data.role === 'admin') setUserRole('admin');
-               else setUserRole('gestor');
-            });
-        } else {
-          setCurrentUser('Não autenticado');
-        }
-      }
-    );
+    supabase.auth.getSession().then(({ data: { session } }) => applySession(session));
+
+    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
+      applySession(session);
+    });
 
     return () => {
       authListener.subscription.unsubscribe();
     };
-  }, []);
+  }, [loadUserProfile]);
 
   const [pendingApprovals, setPendingApprovals] = useState<PendingApproval[]>(() => {
     if (typeof window !== 'undefined') {
@@ -903,6 +965,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         setCurrentUser,
         userRole,
         setUserRole,
+        currentUserId,
+        userProfile,
+        permissions,
+        permissionsLoaded,
+        isAdmin,
+        can,
+        refreshUserProfile,
         pendingApprovals,
         setPendingApprovals,
         approvePending,

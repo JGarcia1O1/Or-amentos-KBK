@@ -28,6 +28,7 @@ export default function Sidebar() {
     materials,
     setSelectedQuote,
     userRole,
+    can,
   } = useApp();
 
   return (
@@ -58,6 +59,7 @@ export default function Sidebar() {
             Módulos Ativos
           </div>
 
+          {can('dashboard') && (
           <button
             type="button"
             onClick={() => setCurrentView('dashboard')}
@@ -72,7 +74,9 @@ export default function Sidebar() {
               <span>Gestão & Analytics</span>
             </div>
           </button>
+          )}
 
+          {can('obras') && (
           <button
             type="button"
             onClick={() => setCurrentView('obras')}
@@ -87,8 +91,10 @@ export default function Sidebar() {
               <span>Produção & Obras</span>
             </div>
           </button>
+          )}
 
           {/* Módulo Orçamentos */}
+          {can('quotes') && (
           <button
             type="button"
             onClick={() => {
@@ -115,9 +121,10 @@ export default function Sidebar() {
               {quotes.length}
             </span>
           </button>
+          )}
 
           {/* Módulo Clientes */}
-          {userRole !== 'trabalhador' && (
+          {can('visits') && (
               <button
                 type="button"
                 onClick={() => {
@@ -136,7 +143,7 @@ export default function Sidebar() {
               </button>
             )}
             
-            {userRole !== 'trabalhador' && (
+            {can('clients') && (
               <button
                 type="button"
                 onClick={() => setCurrentView('clients')}
@@ -157,7 +164,7 @@ export default function Sidebar() {
           )}
 
           {/* Módulo Chapas & Materiais */}
-          {userRole !== 'trabalhador' && (
+          {can('materials') && (
             <button
               type="button"
               onClick={() => setCurrentView('materials')}
@@ -179,7 +186,7 @@ export default function Sidebar() {
 
           
           {/* Módulo Emails & Cobranças */}
-          {userRole !== 'trabalhador' && (
+          {can('emails') && (
             <button
               type="button"
               onClick={() => setCurrentView('emails')}
@@ -197,7 +204,7 @@ export default function Sidebar() {
           )}
 
           {/* Configurações Gerais */}
-          {userRole !== 'trabalhador' && (
+          {can('settings') && (
             <button
               type="button"
               onClick={() => setCurrentView('settings')}

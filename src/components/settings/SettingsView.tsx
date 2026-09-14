@@ -15,12 +15,14 @@ import { toast } from 'sonner';
 import { Workstation, CompanyInfo } from '@/types';
 import ConditionsLivePreview from './ConditionsLivePreview';
 import BackupCard from './BackupCard';
+import UsersPermissionsCard from './UsersPermissionsCard';
 
 export default function SettingsView() {
   const {
     companyInfo,
     updateCompanyInfo,
     userRole,
+    isAdmin,
     pendingApprovals,
     approvePending,
     rejectPending,
@@ -47,6 +49,11 @@ export default function SettingsView() {
           Dados institucionais e condições comerciais da KUBIK HOME.
         </p>
       </div>
+
+      {/* ============================================================ */}
+      {/* 0.1 UTILIZADORES & PERMISSÕES (Apenas Administrador)          */}
+      {/* ============================================================ */}
+      {isAdmin && <UsersPermissionsCard />}
 
       {/* ============================================================ */}
       {/* 0. APROVAÇÕES PENDENTES (Apenas Administrador)                */}

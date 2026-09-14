@@ -2,6 +2,40 @@ export type QuoteStatus = 'Rascunho' | 'Apresentado' | 'Adjudicado' | 'Recusado'
 
 export type UserRole = 'admin' | 'gestor' | 'trabalhador';
 
+/* ==========================================================
+   PERMISSÕES POR MÓDULO (Gestão de Acessos)
+   ========================================================== */
+
+// Nível de acesso a um módulo.
+// 'none' = não vê sequer o módulo | 'view' = só consulta | 'edit' = consulta e altera
+export type PermissionLevel = 'none' | 'view' | 'edit';
+
+// Chave de cada módulo do software. Ao adicionar um módulo novo no futuro,
+// acrescenta aqui e em APP_MODULES (src/lib/permissions.ts).
+export type ModuleKey =
+  | 'dashboard'
+  | 'obras'
+  | 'quotes'
+  | 'visits'
+  | 'clients'
+  | 'materials'
+  | 'emails'
+  | 'settings';
+
+export type PermissionMap = Record<ModuleKey, PermissionLevel>;
+
+// Utilizador da plataforma (tabela public.user_roles no Supabase)
+export interface AppUser {
+  userId: string;        // user_id
+  email: string;         // email
+  displayName: string;   // display_name
+  role: UserRole;        // role
+  permissions: PermissionMap; // permissions (jsonb)
+  isActive: boolean;     // is_active
+  createdAt?: string;    // created_at
+  updatedAt?: string;    // updated_at
+}
+
 export interface PendingApproval {
   id: string;
   type: 
