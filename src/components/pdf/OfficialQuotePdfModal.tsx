@@ -219,19 +219,32 @@ export default function OfficialQuotePdfModal() {
                         </tr>
 
                         {/* Linhas dos Artigos (Minimalistas) */}
-                        {chap.items.map((item, itemIdx) => {
-                          const sellUnit = calculateItemSellUnit(item);
-                          const sellTotal = calculateItemSellTotal(item);
-                          const pdfCode = `${chapIdx + 1}.${itemIdx + 1}`;
+                        {(() => {
+                          let mainItemCount = 0;
+                          let subItemCount = 0;
+                          return chap.items.map((item, itemIdx) => {
+                            if (item.isSubItem) {
+                              subItemCount++;
+                            } else {
+                              mainItemCount++;
+                              subItemCount = 0;
+                            }
+                            const pdfCode = item.isSubItem
+                              ? `${chapIdx + 1}.${mainItemCount}.${subItemCount}`
+                              : `${chapIdx + 1}.${mainItemCount}`;
+                            
+                            const sellUnit = calculateItemSellUnit(item);
+                            const sellTotal = calculateItemSellTotal(item);
 
-                          return (
-                            <tr key={item.id} className="align-top bg-white border-b border-gray-100 last-of-type:border-b-0">
-                              <td className="py-3 px-2 text-center font-mono text-[10px] text-gray-500">
-                                {pdfCode}
-                              </td>
-                              <td className="py-3 px-3 text-[11px] whitespace-pre-line break-words text-gray-800 font-medium">
-                                {item.designation}
-                              </td>
+                            return (
+                              <tr key={item.id} className="align-top bg-white border-b border-gray-100 last-of-type:border-b-0">
+                                <td className="py-3 px-2 text-center font-mono text-[10px] text-gray-500">
+                                  {pdfCode}
+                                </td>
+                                <td className={`py-3 px-3 text-[11px] whitespace-pre-line break-words text-gray-800 font-medium ${item.isSubItem ? 'pl-6' : ''}`}>
+                                  {item.isSubItem && <span className="inline-block w-2 border-t border-gray-300 mr-2 align-middle"></span>}
+                                  {item.designation}
+                                </td>
                               <td className="py-3 px-2 text-center text-[10px] text-gray-400">
                                 {item.unit}
                               </td>
@@ -246,9 +259,10 @@ export default function OfficialQuotePdfModal() {
                               </td>
                             </tr>
                           );
-                        })}
+                        })
+                      })()}
 
-                        {/* Subtotal do Capítulo */}
+                      {/* Subtotal do Capítulo */}
                         <tr>
                           <td colSpan={5} className="pt-4 pb-2 px-3 text-right text-gray-500 text-[10px] font-medium border-t border-gray-100">
                             Subtotal {chap.title}

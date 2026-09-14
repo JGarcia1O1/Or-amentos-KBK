@@ -28,6 +28,7 @@ import {
   Plus,
   Trash2,
   X,
+  CornerDownRight,
   FileCheck,
   FolderPlus,
   Sparkles,
@@ -765,49 +766,72 @@ export default function QuoteEditor() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
-                  {chap.items.map((item, iIdx) => {
-                    const sellUnit = calculateItemSellUnit(item);
-                    const sellTotal = calculateItemSellTotal(item);
-                    const isAuto = item.calculationMode === 'automatic';
-                    const isExpanded = isAuto && (expandedItems[item.id] !== false);
+                  {(() => {
+                    let mainItemCount = 0;
+                    let subItemCount = 0;
+                    return chap.items.map((item, iIdx) => {
+                      if (item.isSubItem) {
+                        subItemCount++;
+                      } else {
+                        mainItemCount++;
+                        subItemCount = 0;
+                      }
+                      const displayCode = item.isSubItem
+                        ? `${cIdx + 1}.${mainItemCount}.${subItemCount}`
+                        : `${cIdx + 1}.${mainItemCount}`;
+                      
+                      const sellUnit = calculateItemSellUnit(item);
+                      const sellTotal = calculateItemSellTotal(item);
+                      const isAuto = item.calculationMode === 'automatic';
+                      const isExpanded = isAuto && (expandedItems[item.id] !== false);
 
-                    const autoCfg: AutomaticItemConfig = item.automaticConfig || {
-                      materialCode: materials[0]?.code || '502114',
-                      sheetUsage: 1,
-                      edgeCode: edges[0]?.code || '',
-                      edgeBandingMeters: 10,
-                      edgeBandingRate: 0.7,
-                      operations: workstations.map(w => ({
-                        workstationCode: w.code,
-                        opMin: 60,
-                        setupMin: 15,
-                        isActive: true,
-                      })),
-                      hardware: [],
-                    };
+                      const autoCfg: AutomaticItemConfig = item.automaticConfig || {
+                        materialCode: materials[0]?.code || '502114',
+                        sheetUsage: 1,
+                        edgeCode: edges[0]?.code || '',
+                        edgeBandingMeters: 10,
+                        edgeBandingRate: 0.7,
+                        operations: workstations.map(w => ({
+                          workstationCode: w.code,
+                          opMin: 60,
+                          setupMin: 15,
+                          isActive: true,
+                        })),
+                        hardware: [],
+                      };
 
-                    const selectedMat = materials.find(
-                      m => m.code === autoCfg.materialCode
-                    );
-                    const matCost =
-                      (autoCfg.sheetUsage || 0) * (selectedMat ? selectedMat.price : 0);
-                    const edgeCost =
-                      (autoCfg.edgeBandingMeters || 0) *
-                      (autoCfg.edgeBandingRate !== undefined
-                        ? autoCfg.edgeBandingRate
-                        : 0.7);
+                      const selectedMat = materials.find(
+                        m => m.code === autoCfg.materialCode
+                      );
+                      const matCost =
+                        (autoCfg.sheetUsage || 0) * (selectedMat ? selectedMat.price : 0);
+                      const edgeCost =
+                        (autoCfg.edgeBandingMeters || 0) *
+                        (autoCfg.edgeBandingRate !== undefined
+                          ? autoCfg.edgeBandingRate
+                          : 0.7);
 
-                    return (
-                      <React.Fragment key={item.id}>
-                        <tr className={`hover:bg-gray-50/50 ${isAuto ? 'bg-blue-50/10' : ''}`}>
-                          {/* Código do Artigo */}
-                          <td className="py-3 px-3 font-mono font-bold text-gray-400 text-[11px] align-top">
-                            {item.code}
-                          </td>
+                      return (
+                        <React.Fragment key={item.id}>
+                          <tr className={`hover:bg-gray-50/50 ${isAuto ? 'bg-blue-50/10' : ''}`}>
+                            {/* Código do Artigo */}
+                            <td className="py-3 px-3 font-mono font-bold text-gray-400 text-[11px] align-top">
+                              <div className="flex flex-col gap-1 items-start">
+                                <span>{displayCode}</span>
+                                <button
+                                  type="button"
+                                  onClick={() => handleUpdateItem(cIdx, iIdx, 'isSubItem', !item.isSubItem)}
+                                  className={`p-1 rounded ${item.isSubItem ? 'bg-blue-100 text-blue-600' : 'hover:bg-gray-100 text-gray-400'}`}
+                                  title={item.isSubItem ? 'Remover Sub-tópico' : 'Tornar Sub-tópico'}
+                                >
+                                  <CornerDownRight className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            </td>
 
-                          {/* Designação e Toggle de Modo */}
-                          <td className="py-3 px-3 align-top space-y-1.5">
-                            <textarea
+                            {/* Designação e Toggle de Modo */}
+                            <td className={`py-3 px-3 align-top space-y-1.5 ${item.isSubItem ? 'pl-8 border-l-2 border-gray-100' : ''}`}>
+                              <textarea
                               value={item.designation}
                               onChange={e =>
                                 handleUpdateItem(
@@ -1235,8 +1259,9 @@ export default function QuoteEditor() {
                           </tr>
                         )}
                       </React.Fragment>
-                    );
-                  })}
+                      );
+                    })
+                  })()}
                 </tbody>
               </table>
             </div>

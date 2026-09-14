@@ -126,6 +126,7 @@ export interface QuoteItem {
   calculationMode?: 'quick' | 'technical' | 'automatic';
   technicalSheet?: TechnicalSheet;
   automaticConfig?: AutomaticItemConfig;
+  isSubItem?: boolean;
 }
 
 export interface QuoteChapter {
