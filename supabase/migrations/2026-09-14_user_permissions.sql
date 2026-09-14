@@ -93,6 +93,17 @@ SELECT
 FROM auth.users u
 ON CONFLICT (user_id) DO NOTHING;
 
+-- A tabela original não tinha coluna email, por isso as linhas que já lá
+-- estavam ficaram com email NULL quando a coluna foi acrescentada. Sem isto,
+-- o UPDATE seguinte (que procura pelo email) não encontra ninguém.
+UPDATE public.user_roles ur
+SET email = u.email,
+    display_name = COALESCE(ur.display_name, u.raw_user_meta_data ->> 'display_name', split_part(u.email, '@', 1)),
+    updated_at = now()
+FROM auth.users u
+WHERE u.id = ur.user_id
+  AND ur.email IS NULL;
+
 UPDATE public.user_roles
 SET role = 'admin',
     is_active = true,
@@ -193,7 +204,15 @@ CREATE TRIGGER kubik_user_roles_touch
 -- Corre só depois de confirmares o resultado do BLOCO 3.
 -- =====================================================================
 
+-- IMPORTANTE: as políticas do PostgreSQL somam-se por OR. Uma política
+-- antiga do tipo "Allow authenticated full access" deixada em vigor daria
+-- acesso total a qualquer utilizador autenticado e anularia por completo as
+-- regras por módulo. Por isso removem-se as antigas antes de instalar as novas.
+-- A tabela audit_logs fica intocada de propósito (registo de auditoria).
+
 ALTER TABLE public.user_roles ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Users read own role" ON public.user_roles;
 
 DROP POLICY IF EXISTS "kubik_user_roles_select" ON public.user_roles;
 CREATE POLICY "kubik_user_roles_select"
@@ -221,6 +240,7 @@ CREATE POLICY "kubik_user_roles_delete"
 DO $$
 DECLARE
   t record;
+  p record;
 BEGIN
   FOR t IN
     SELECT * FROM (VALUES
@@ -240,6 +260,19 @@ BEGIN
       WHERE table_schema = 'public' AND table_name = t.table_name
     ) THEN
       EXECUTE format('ALTER TABLE public.%I ENABLE ROW LEVEL SECURITY', t.table_name);
+
+      -- Remove qualquer política antiga desta tabela. Sem isto, uma política
+      -- permissiva pré-existente somava-se por OR às novas e dava acesso
+      -- total a qualquer utilizador autenticado.
+      FOR p IN
+        SELECT policyname FROM pg_policies
+        WHERE schemaname = 'public'
+          AND tablename = t.table_name
+          AND policyname NOT LIKE 'kubik\_%'
+      LOOP
+        EXECUTE format('DROP POLICY IF EXISTS %I ON public.%I', p.policyname, t.table_name);
+        RAISE NOTICE 'Removida politica antiga % em %', p.policyname, t.table_name;
+      END LOOP;
 
       EXECUTE format('DROP POLICY IF EXISTS %I ON public.%I',
                      'kubik_' || t.table_name || '_select', t.table_name);
