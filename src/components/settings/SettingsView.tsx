@@ -84,6 +84,9 @@ export default function SettingsView() {
                     {p.type === 'hardware_add' && `Nova Ferragem: ${p.data.code}`}
                     {p.type === 'hardware_edit' && `Alterar Preço da Ferragem: ${p.data.code} para ${p.data.updated.price}€`}
                     {p.type === 'hardware_delete' && `Remover Ferragem: ${p.data.code}`}
+                    {p.type === 'edge_add' && `Nova Orla: ${p.data.code}`}
+                    {p.type === 'edge_edit' && `Alterar Preço da Orla: ${p.data.code} para ${p.data.updated.pricePerMeter}€/m`}
+                    {p.type === 'edge_delete' && `Remover Orla: ${p.data.code}`}
                   </div>
                 </div>
                 <div className="flex gap-2">

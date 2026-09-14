@@ -41,7 +41,8 @@ export interface PendingApproval {
   type: 
     | 'workstation_add' | 'workstation_edit' | 'workstation_delete' | 'company_info_edit'
     | 'material_add' | 'material_edit' | 'material_delete'
-    | 'hardware_add' | 'hardware_edit' | 'hardware_delete';
+    | 'hardware_add' | 'hardware_edit' | 'hardware_delete'
+    | 'edge_add' | 'edge_edit' | 'edge_delete';
   data: any;
   requestedBy: string;        // requested_by_name — nome de quem pediu
   requestedById?: string;     // requested_by — id da conta que pediu

@@ -666,20 +666,41 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     });
   };
 
+  // Mapeamento camelCase -> snake_case para a tabela edges
+  const edgeToDb = (e: EdgeMaterial) => ({
+    code: e.code,
+    name: e.name,
+    price_per_meter: e.pricePerMeter,
+  });
+
   const addEdge = (e: EdgeMaterial) => {
-    setEdges(prev => [...prev, e]);
-    supabase.from('edges').insert([e]).then();
+    if (needsApproval('materials')) {
+      createPending('edge_add', e);
+    } else {
+      setEdges(prev => [...prev, e]);
+      supabase.from('edges').insert([edgeToDb(e)]).then(res => {
+        if (res.error) console.error('Erro supabase addEdge:', res.error);
+      });
+    }
   };
 
   const updateEdgePrice = (code: string, price: number) => {
-    setEdges(prev => prev.map(edge => (edge.code === code ? { ...edge, pricePerMeter: price } : edge)));
-    supabase.from('edges').update({ price_per_meter: price }).eq('code', code).then();
+    if (needsApproval('materials')) {
+      createPending('edge_edit', { code, updated: { pricePerMeter: price } });
+    } else {
+      setEdges(prev => prev.map(edge => (edge.code === code ? { ...edge, pricePerMeter: price } : edge)));
+      supabase.from('edges').update({ price_per_meter: price }).eq('code', code).then();
+    }
   };
 
   const deleteEdge = (code: string) => {
     confirmAction('Remover Orla', 'Deseja remover esta orla do catálogo?', () => {
-      setEdges(prev => prev.filter(e => e.code !== code));
+      if (needsApproval('materials')) {
+        createPending('edge_delete', { code });
+      } else {
+        setEdges(prev => prev.filter(e => e.code !== code));
         supabase.from('edges').delete().eq('code', code).then();
+      }
     });
   };
 
@@ -750,6 +771,31 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           const { error } = await supabase.from('hardware').delete().eq('code', pending.data.code);
           if (error) throw error;
           setHardware(prev => prev.filter(h => h.code !== pending.data.code));
+          break;
+        }
+        case 'edge_add': {
+          const { error } = await supabase.from('edges').insert([edgeToDb(pending.data)]);
+          if (error) throw error;
+          setEdges(prev => [...prev, pending.data]);
+          break;
+        }
+        case 'edge_edit': {
+          const { error } = await supabase
+            .from('edges')
+            .update({ price_per_meter: pending.data.updated.pricePerMeter })
+            .eq('code', pending.data.code);
+          if (error) throw error;
+          setEdges(prev =>
+            prev.map(e => (e.code === pending.data.code
+              ? { ...e, pricePerMeter: pending.data.updated.pricePerMeter }
+              : e))
+          );
+          break;
+        }
+        case 'edge_delete': {
+          const { error } = await supabase.from('edges').delete().eq('code', pending.data.code);
+          if (error) throw error;
+          setEdges(prev => prev.filter(e => e.code !== pending.data.code));
           break;
         }
         case 'company_info_edit': {

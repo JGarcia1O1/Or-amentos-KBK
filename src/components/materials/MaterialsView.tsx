@@ -14,6 +14,7 @@ import {
   X,
   Cpu,
   Scissors,
+  Eye,
 } from 'lucide-react';
 
 export default function MaterialsView() {
@@ -35,7 +36,12 @@ export default function MaterialsView() {
     updateWorkstationRate,
     addWorkstation,
     deleteWorkstation,
+    can,
   } = useApp();
+
+  // Modo consulta: vê o catálogo mas as alterações seguem como pedido
+  const viewOnly = can('materials', 'view') && !can('materials', 'edit');
+  const actionWord = viewOnly ? 'Pedir' : 'Adicionar';
 
   const [activeTab, setActiveTab] = useState<'materials' | 'hardware' | 'edges' | 'workstations'>('materials');
   const [searchQuery, setSearchQuery] = useState('');
@@ -212,44 +218,54 @@ export default function MaterialsView() {
             <button
               type="button"
               onClick={() => setShowAddMaterialModal(true)}
-              className="inline-flex items-center gap-1.5 bg-black hover:bg-gray-800 text-white text-xs font-semibold px-3.5 py-2 rounded-xl shadow-xs transition"
+              className={`inline-flex items-center gap-1.5 text-white text-xs font-semibold px-3.5 py-2 rounded-xl shadow-xs transition ${viewOnly ? 'bg-amber-600 hover:bg-amber-700' : 'bg-black hover:bg-gray-800'}`}
             >
               <Plus className="w-3.5 h-3.5" />
-              <span>Adicionar Nova Chapa</span>
+              <span>{actionWord} Nova Chapa</span>
             </button>
           )}
           {activeTab === 'hardware' && (
             <button
               type="button"
               onClick={() => setShowAddHardwareModal(true)}
-              className="inline-flex items-center gap-1.5 bg-black hover:bg-gray-800 text-white text-xs font-semibold px-3.5 py-2 rounded-xl shadow-xs transition"
+              className={`inline-flex items-center gap-1.5 text-white text-xs font-semibold px-3.5 py-2 rounded-xl shadow-xs transition ${viewOnly ? 'bg-amber-600 hover:bg-amber-700' : 'bg-black hover:bg-gray-800'}`}
             >
               <Plus className="w-3.5 h-3.5" />
-              <span>Adicionar Ferragem</span>
+              <span>{actionWord} Ferragem</span>
             </button>
           )}
           {activeTab === 'edges' && (
             <button
               type="button"
               onClick={() => setShowAddEdgeModal(true)}
-              className="inline-flex items-center gap-1.5 bg-black hover:bg-gray-800 text-white text-xs font-semibold px-3.5 py-2 rounded-xl shadow-xs transition"
+              className={`inline-flex items-center gap-1.5 text-white text-xs font-semibold px-3.5 py-2 rounded-xl shadow-xs transition ${viewOnly ? 'bg-amber-600 hover:bg-amber-700' : 'bg-black hover:bg-gray-800'}`}
             >
               <Plus className="w-3.5 h-3.5" />
-              <span>Adicionar Orla</span>
+              <span>{actionWord} Orla</span>
             </button>
           )}
           {activeTab === 'workstations' && (
             <button
               type="button"
               onClick={() => setShowAddMachineModal(true)}
-              className="inline-flex items-center gap-1.5 bg-black hover:bg-gray-800 text-white text-xs font-semibold px-3.5 py-2 rounded-xl shadow-xs transition"
+              className={`inline-flex items-center gap-1.5 text-white text-xs font-semibold px-3.5 py-2 rounded-xl shadow-xs transition ${viewOnly ? 'bg-amber-600 hover:bg-amber-700' : 'bg-black hover:bg-gray-800'}`}
             >
               <Plus className="w-3.5 h-3.5" />
-              <span>Adicionar Nova Máquina</span>
+              <span>{actionWord} Nova Máquina</span>
             </button>
           )}
         </div>
       </div>
+
+      {viewOnly && (
+        <div className="flex items-start gap-2.5 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
+          <Eye className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+          <p className="text-xs text-amber-900 leading-relaxed">
+            Tens acesso de <strong>consulta</strong> a este catálogo. As alterações que fizeres
+            não são aplicadas de imediato — seguem como pedido para aprovação da administração.
+          </p>
+        </div>
+      )}
 
       {/* Navegação entre Abas e Pesquisa */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-200 pb-2">
@@ -378,7 +394,7 @@ export default function MaterialsView() {
                     <td className="py-3.5 px-4 text-center">
                       <button
                         onClick={() => deleteMaterial(m.code)}
-                        title="Eliminar chapa"
+                        title={viewOnly ? 'Pedir remoção desta chapa' : 'Eliminar chapa'}
                         className="text-gray-300 hover:text-red-500 transition p-1"
                       >
                         <Trash2 className="w-4 h-4" />
