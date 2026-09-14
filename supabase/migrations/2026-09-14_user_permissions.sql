@@ -28,8 +28,16 @@ ALTER TABLE public.user_roles ADD COLUMN IF NOT EXISTS created_at   timestamptz 
 ALTER TABLE public.user_roles ADD COLUMN IF NOT EXISTS updated_at   timestamptz NOT NULL DEFAULT now();
 
 -- A tabela user_roles já existia em produção com uma restrição de mesmo nome
--- que NÃO aceitava o valor 'trabalhador'. Substitui-se pela correta.
--- É apenas uma restrição: nenhuma coluna ou dado é perdido, e é reversível.
+-- que só aceitava ('admin', 'user') — o vocabulário original, de dois níveis.
+-- O código evoluiu para três níveis sem que a restrição fosse acompanhada.
+--
+-- Primeiro converte-se o valor antigo: 'user' significava "todos menos o
+-- administrador", ou seja quem usava a plataforma a sério — corresponde a
+-- 'gestor' e não a 'trabalhador', para não retirar acessos sem aviso.
+UPDATE public.user_roles SET role = 'gestor' WHERE role = 'user';
+
+-- Só depois se substitui a restrição. É apenas uma restrição: nenhuma coluna
+-- ou dado é perdido, e é reversível.
 ALTER TABLE public.user_roles DROP CONSTRAINT IF EXISTS user_roles_role_check;
 
 ALTER TABLE public.user_roles
