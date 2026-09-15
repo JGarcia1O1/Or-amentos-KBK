@@ -201,7 +201,7 @@ export default function MaterialsView() {
   );
 
   return (
-    <div className="p-6 space-y-6 w-full">
+    <div className="p-4 sm:p-5 lg:p-6 space-y-4 sm:space-y-6 w-full">
       {/* Cabeçalho */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
@@ -268,11 +268,11 @@ export default function MaterialsView() {
       )}
 
       {/* Navegação entre Abas e Pesquisa */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-200 pb-2">
-        <div className="flex items-center gap-2">
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 lg:gap-4 border-b border-gray-200 pb-2">
+        <div className="flex items-center gap-2 overflow-x-auto scroll-limpo -mx-1 px-1">
           <button
             onClick={() => setActiveTab('materials')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition ${
+            className={`shrink-0 flex items-center gap-2 px-3 sm:px-4 h-10 rounded-xl text-xs font-bold transition whitespace-nowrap ${
               activeTab === 'materials'
                 ? 'bg-black text-white shadow-xs'
                 : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100'
@@ -283,7 +283,7 @@ export default function MaterialsView() {
           </button>
           <button
             onClick={() => setActiveTab('hardware')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition ${
+            className={`shrink-0 flex items-center gap-2 px-3 sm:px-4 h-10 rounded-xl text-xs font-bold transition whitespace-nowrap ${
               activeTab === 'hardware'
                 ? 'bg-black text-white shadow-xs'
                 : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100'
@@ -294,7 +294,7 @@ export default function MaterialsView() {
           </button>
           <button
             onClick={() => setActiveTab('edges')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition ${
+            className={`shrink-0 flex items-center gap-2 px-3 sm:px-4 h-10 rounded-xl text-xs font-bold transition whitespace-nowrap ${
               activeTab === 'edges'
                 ? 'bg-black text-white shadow-xs'
                 : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100'
@@ -305,7 +305,7 @@ export default function MaterialsView() {
           </button>
           <button
             onClick={() => setActiveTab('workstations')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition ${
+            className={`shrink-0 flex items-center gap-2 px-3 sm:px-4 h-10 rounded-xl text-xs font-bold transition whitespace-nowrap ${
               activeTab === 'workstations'
                 ? 'bg-black text-white shadow-xs'
                 : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100'
@@ -316,7 +316,7 @@ export default function MaterialsView() {
           </button>
         </div>
 
-        <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-xl px-3 py-1.5 max-w-xs w-full text-xs">
+        <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-xl px-3 h-10 w-full lg:max-w-xs text-[13px] shrink-0">
           <Search className="w-4 h-4 text-gray-400" />
           <input
             type="text"
@@ -331,8 +331,83 @@ export default function MaterialsView() {
       {/* TABELA DE CHAPAS */}
       {activeTab === 'materials' && (
         <div className="bg-white rounded-2xl border border-gray-200 shadow-xs overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs border-collapse">
+          {/* Cartões — só no telemóvel */}
+          <div className="md:hidden divide-y divide-gray-100">
+            {filteredMaterials.length === 0 ? (
+              <div className="px-4 py-10 text-center text-sm text-gray-400">
+                Nenhuma chapa encontrada.
+              </div>
+            ) : (
+              filteredMaterials.map(m => (
+                <div key={m.code} className="p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <div className="font-mono text-[11px] font-bold text-gray-400">
+                        {m.code}
+                      </div>
+                      <div className="text-[13px] font-semibold text-gray-900 leading-snug mt-0.5">
+                        {m.name}
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => deleteMaterial(m.code)}
+                      title={viewOnly ? 'Pedir remoção desta chapa' : 'Eliminar chapa'}
+                      className="w-9 h-9 shrink-0 rounded-lg border border-gray-200 text-gray-400 flex items-center justify-center"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+
+                  <div className="mt-2 font-mono text-[11px] text-gray-400 flex items-center gap-2 flex-wrap">
+                    <span>{m.unit || 'UN'}</span>
+                    <span>·</span>
+                    <span>Armazém {m.warehouse || 1}</span>
+                    <span>·</span>
+                    <span>{m.quantity || 0} em stock</span>
+                  </div>
+
+                  <div className="flex items-end justify-between gap-3 mt-3">
+                    <div className="flex-1">
+                      <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">
+                        Preço unitário
+                      </label>
+                      <div className="flex items-center gap-1.5">
+                        <input
+                          type="number"
+                          inputMode="decimal"
+                          step="0.5"
+                          min="0"
+                          defaultValue={m.price}
+                          onBlur={e => {
+                            const val = Number(e.target.value);
+                            if (val !== m.price) updateMaterialPrice(m.code, val);
+                          }}
+                          className="w-28 h-11 px-3 text-right bg-white border border-gray-200 rounded-lg outline-none font-mono font-bold focus:border-black"
+                        />
+                        <span className="text-gray-400 text-sm">€</span>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">
+                        Total
+                      </div>
+                      <div className="font-mono text-sm font-bold text-gray-900 num-tabular">
+                        {(m.total
+                          ? m.total
+                          : m.price * (m.quantity || 0)
+                        ).toFixed(2)}{' '}
+                        €
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+
+          {/* Tabela — a partir de md */}
+          <div className="hidden md:block overflow-x-auto">
+            <table className="w-full text-left text-[13px] border-collapse num-tabular">
               <thead className="bg-gray-50 text-gray-400 font-bold uppercase text-[10px] border-b border-gray-200">
                 <tr>
                   <th className="py-3.5 px-4">Ref.</th>
@@ -411,8 +486,53 @@ export default function MaterialsView() {
       {/* TABELA DE FERRAGENS */}
       {activeTab === 'hardware' && (
         <div className="bg-white rounded-2xl border border-gray-200 shadow-xs overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs border-collapse">
+          {/* Cartões — só no telemóvel */}
+          <div className="md:hidden divide-y divide-gray-100">
+            {filteredHardware.length === 0 ? (
+              <div className="px-4 py-10 text-center text-sm text-gray-400">
+                Nenhuma ferragem encontrada.
+              </div>
+            ) : (
+              filteredHardware.map(h => (
+                <div key={h.code} className="p-4 flex items-center gap-3">
+                  <div className="min-w-0 flex-1">
+                    <div className="font-mono text-[11px] font-bold text-gray-400">
+                      {h.code} · {h.unit}
+                    </div>
+                    <div className="text-[13px] font-semibold text-gray-900 leading-snug mt-0.5">
+                      {h.name}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <input
+                      type="number"
+                      inputMode="decimal"
+                      step="0.5"
+                      min="0"
+                      defaultValue={h.price}
+                      onBlur={e => {
+                        const val = Number(e.target.value);
+                        if (val !== h.price) updateHardwarePrice(h.code, val);
+                      }}
+                      className="w-24 h-11 px-3 text-right bg-white border border-gray-200 rounded-lg outline-none font-mono font-bold focus:border-black"
+                    />
+                    <span className="text-gray-400 text-sm">€</span>
+                  </div>
+                  <button
+                    onClick={() => deleteHardware(h.code)}
+                    title="Eliminar ferragem"
+                    className="w-9 h-9 shrink-0 rounded-lg border border-gray-200 text-gray-400 flex items-center justify-center"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              ))
+            )}
+          </div>
+
+          {/* Tabela — a partir de md */}
+          <div className="hidden md:block overflow-x-auto">
+            <table className="w-full text-left text-[13px] border-collapse num-tabular">
               <thead className="bg-gray-50 text-gray-400 font-bold uppercase text-[10px] border-b border-gray-200">
                 <tr>
                   <th className="py-3.5 px-4">Ref. / Código</th>
@@ -477,8 +597,53 @@ export default function MaterialsView() {
       {/* TABELA DE ORLAS */}
       {activeTab === 'edges' && (
         <div className="bg-white rounded-2xl border border-gray-200 shadow-xs overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs border-collapse">
+          {/* Cartões — só no telemóvel */}
+          <div className="md:hidden divide-y divide-gray-100">
+            {filteredEdges.length === 0 ? (
+              <div className="px-4 py-10 text-center text-sm text-gray-400">
+                Nenhuma orla encontrada.
+              </div>
+            ) : (
+              filteredEdges.map(e => (
+                <div key={e.code} className="p-4 flex items-center gap-3">
+                  <div className="min-w-0 flex-1">
+                    <div className="font-mono text-[11px] font-bold text-gray-400">
+                      {e.code} · METRO
+                    </div>
+                    <div className="text-[13px] font-semibold text-gray-900 leading-snug mt-0.5">
+                      {e.name}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <input
+                      type="number"
+                      inputMode="decimal"
+                      step="0.05"
+                      min="0"
+                      defaultValue={e.pricePerMeter}
+                      onBlur={evt => {
+                        const val = Number(evt.target.value);
+                        if (val !== e.pricePerMeter) updateEdgePrice(e.code, val);
+                      }}
+                      className="w-24 h-11 px-3 text-right bg-white border border-gray-200 rounded-lg outline-none font-mono font-bold focus:border-black"
+                    />
+                    <span className="text-gray-400 text-sm">€</span>
+                  </div>
+                  <button
+                    onClick={() => deleteEdge(e.code)}
+                    title="Eliminar orla"
+                    className="w-9 h-9 shrink-0 rounded-lg border border-gray-200 text-gray-400 flex items-center justify-center"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              ))
+            )}
+          </div>
+
+          {/* Tabela — a partir de md */}
+          <div className="hidden md:block overflow-x-auto">
+            <table className="w-full text-left text-[13px] border-collapse num-tabular">
               <thead className="bg-gray-50 text-gray-400 font-bold uppercase text-[10px] border-b border-gray-200">
                 <tr>
                   <th className="py-3.5 px-4">Ref. / Código</th>
@@ -542,7 +707,7 @@ export default function MaterialsView() {
 
       {/* TABELA DE MÁQUINAS / POSTOS DE TRABALHO */}
       {activeTab === 'workstations' && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
           {filteredWorkstations.map(ws => (
             <div
               key={ws.code}
@@ -615,7 +780,7 @@ export default function MaterialsView() {
             </div>
 
             <form onSubmit={handleAddMaterial} className="space-y-3 text-xs">
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
                   <label className="block text-gray-500 font-bold mb-1">
                     Ref. / Código *
@@ -648,7 +813,7 @@ export default function MaterialsView() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
                   <label className="block text-gray-500 font-bold mb-1">
                     Unidade
@@ -789,7 +954,7 @@ export default function MaterialsView() {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-gray-500 font-bold mb-1">
                     Unidade

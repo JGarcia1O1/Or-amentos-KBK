@@ -142,7 +142,7 @@ ${signature}
 
   return (
     <div className="h-full space-y-6 overflow-y-auto">
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
         
         {/* Esquerda: Configurações */}
         <div className="col-span-1 space-y-5 bg-gray-50 p-5 rounded-2xl border border-gray-100">
@@ -206,7 +206,7 @@ ${signature}
 
               {templateType === '2_envio' && (
                 <>
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                       <label className="block text-xs text-gray-500 font-medium mb-1">Valor Total (€)</label>
                       <input 
@@ -326,7 +326,7 @@ ${signature}
                 className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-500 transition-all"
                 placeholder="O Teu Nome"
                />
-               <div className="grid grid-cols-2 gap-3">
+               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <input 
                     type="text" 
                     value={respPhone}

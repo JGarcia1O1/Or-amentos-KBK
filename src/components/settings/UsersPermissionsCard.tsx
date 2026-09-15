@@ -249,7 +249,7 @@ export default function UsersPermissionsCard() {
                   módulos, incluindo esta página. Não há nada para configurar.
                 </div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   {APP_MODULES.map((mod) => (
                     <div
                       key={mod.key}

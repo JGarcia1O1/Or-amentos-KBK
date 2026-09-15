@@ -41,7 +41,7 @@ export default function SettingsView() {
   };
 
   return (
-    <div className="p-6 space-y-8 w-full">
+    <div className="p-4 sm:p-5 lg:p-6 space-y-6 sm:space-y-8 w-full">
       <div>
         <h2 className="text-xl font-bold text-gray-900">
           Configurações Gerais

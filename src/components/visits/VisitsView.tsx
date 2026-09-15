@@ -56,7 +56,7 @@ export default function VisitsView() {
   };
 
   return (
-    <div className="p-6 max-w-7xl mx-auto space-y-6">
+    <div className="p-4 sm:p-5 lg:p-6 max-w-7xl mx-auto space-y-4 sm:space-y-6">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
@@ -98,7 +98,87 @@ export default function VisitsView() {
 
       {/* Tabela */}
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-        <div className="overflow-x-auto">
+        {/* Cartões — só no telemóvel */}
+        <div className="md:hidden divide-y divide-gray-100">
+          {loading ? (
+            <div className="px-4 py-10 text-center text-gray-500 text-sm">
+              A carregar visitas...
+            </div>
+          ) : filtered.length === 0 ? (
+            <div className="px-4 py-10 text-center text-gray-500 text-sm">
+              {search
+                ? 'Nenhuma visita encontrada.'
+                : 'Ainda não existem visitas de obra registadas.'}
+            </div>
+          ) : (
+            filtered.map(visit => (
+              <div key={visit.id} className="p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <div className="font-mono text-[13px] text-indigo-600 font-semibold">
+                      {visit.number}
+                    </div>
+                    <div className="font-semibold text-gray-900 text-[13px] truncate mt-0.5">
+                      {visit.clientName}
+                    </div>
+                  </div>
+                  <span
+                    className={
+                      'shrink-0 px-2.5 py-1 text-[10px] font-semibold border rounded-full ' +
+                      getStatusColor(visit.status)
+                    }
+                  >
+                    {visit.status === 'Orcamentado' ? 'Orçamentado' : visit.status}
+                  </span>
+                </div>
+
+                <div className="mt-2 space-y-1">
+                  <div className="flex items-center gap-1.5 text-xs text-gray-600">
+                    <Calendar className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+                    <span>{visit.visitDate}</span>
+                  </div>
+                  <div className="flex items-center gap-1.5 text-xs text-gray-500">
+                    <MapPin className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+                    <span className="truncate">{visit.clientAddress || 'S/ Morada'}</span>
+                  </div>
+                </div>
+
+                {visit.projectTypes.length > 0 && (
+                  <div className="text-[11px] text-gray-500 mt-2 flex gap-1 flex-wrap">
+                    {visit.projectTypes.map(t => (
+                      <span key={t} className="bg-gray-100 px-1.5 py-0.5 rounded text-gray-600">
+                        {t}
+                      </span>
+                    ))}
+                  </div>
+                )}
+
+                <div className="flex items-center gap-2 mt-3">
+                  <button
+                    onClick={() => {
+                      localStorage.setItem('selectedVisit', JSON.stringify(visit));
+                      setCurrentView('visit-editor' as any);
+                    }}
+                    className="flex-1 h-10 rounded-lg bg-gray-900 text-white text-xs font-semibold flex items-center justify-center gap-1.5"
+                  >
+                    <Edit className="w-3.5 h-3.5" />
+                    Abrir ficha
+                  </button>
+                  <button
+                    onClick={() => handleDelete(visit.id)}
+                    className="w-11 h-10 rounded-lg border border-gray-200 text-gray-400 flex items-center justify-center"
+                    title="Apagar"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+
+        {/* Tabela — a partir de md */}
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-left text-sm text-gray-600">
             <thead className="bg-gray-50/80 text-gray-500 border-b border-gray-200">
               <tr>

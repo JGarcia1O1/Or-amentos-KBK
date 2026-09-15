@@ -61,7 +61,7 @@ export default function ObrasView() {
       </div>
 
       {/* Kanban / Cards View */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
         
         {/* Coluna 1: Em Produção */}
         <div className="bg-gray-50/50 rounded-2xl border border-gray-200 p-4 flex flex-col gap-4">

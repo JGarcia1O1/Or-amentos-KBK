@@ -43,7 +43,7 @@ export default function CompanyDashboard() {
       </div>
 
       {/* Top Main KPIs */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6 mb-6 sm:mb-8">
         <KPICard 
           title="Faturação Total (s/ IVA)" 
           value="€ 45.230" 
@@ -83,7 +83,7 @@ export default function CompanyDashboard() {
       </div>
 
       {/* Grid for the 6 Main Sections from the Excel */}
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 sm:gap-8">
         
         {/* 1. FATURAÇÃO & VENDAS */}
         <DashboardSection title="1. Faturação por Categoria" icon={<ShoppingCart className="w-5 h-5 text-gray-500" />}>
@@ -173,7 +173,7 @@ function DashboardSection({ title, icon, children }: { title: string, icon: Reac
         {icon}
         <h3 className="font-semibold text-gray-800">{title}</h3>
       </div>
-      <div className="p-6 flex-1">
+      <div className="p-4 sm:p-5 lg:p-6 flex-1">
         {children}
       </div>
     </div>
