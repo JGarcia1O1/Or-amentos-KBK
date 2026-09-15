@@ -38,13 +38,30 @@ export function selectionCost(sel: TemplateSelection): number {
 }
 
 /**
+ * Markup e extra fixo efetivos de uma linha.
+ * O que estiver definido na seleção manda sobre o valor da receita — é o que
+ * permite ajustar por obra ou por cliente sem alterar a receita.
+ */
+export function effectiveMargin(sel: TemplateSelection): number {
+  return sel.marginPercent !== undefined
+    ? sel.marginPercent
+    : sel.template.marginPercent || 0;
+}
+
+export function effectiveExtra(sel: TemplateSelection): number {
+  return sel.fixedExtra !== undefined
+    ? sel.fixedExtra
+    : sel.template.fixedExtra || 0;
+}
+
+/**
  * Preço de venda de uma linha, pela mesma fórmula do calculator.ts:
  * venda = custo * (1 + markup) + extra fixo
  * (markup sobre o custo — ver capítulo 3.4 do handoff)
  */
 export function selectionSell(sel: TemplateSelection): number {
   const custo = selectionCost(sel);
-  return custo * (1 + (sel.template.marginPercent || 0)) + (sel.template.fixedExtra || 0);
+  return custo * (1 + effectiveMargin(sel)) + effectiveExtra(sel);
 }
 
 /** Gera um artigo de orçamento a partir de uma receita */
@@ -52,7 +69,9 @@ export function buildItemFromTemplate(
   template: QuoteTemplate,
   quantity: number,
   code: string,
-  seed: number
+  seed: number,
+  marginOverride?: number,
+  extraOverride?: number
 ): QuoteItem {
   const temConfigTecnica =
     !!template.automaticConfig &&
@@ -67,9 +86,9 @@ export function buildItemFromTemplate(
     // No nível simples o custo vem da receita. No nível por módulo o
     // QuoteEditor recalcula-o a partir do automaticConfig.
     costUnit: template.costPerUnit || 0,
-    marginPercent: template.marginPercent || 0,
+    marginPercent: marginOverride !== undefined ? marginOverride : template.marginPercent || 0,
     // O extra fixo é por artigo, não por unidade — entra uma só vez.
-    fixedExtra: template.fixedExtra || 0,
+    fixedExtra: extraOverride !== undefined ? extraOverride : template.fixedExtra || 0,
     calculationMode: temConfigTecnica ? 'automatic' : 'quick',
     automaticConfig: temConfigTecnica ? template.automaticConfig : undefined,
   };
@@ -102,7 +121,9 @@ export function buildChaptersFromSelections(
         sel.template,
         sel.quantity,
         `${chapterIndex}.${i + 1}`,
-        Date.now() + chapterIndex * 100 + i
+        Date.now() + chapterIndex * 100 + i,
+        sel.marginPercent,
+        sel.fixedExtra
       )
     );
     chapters.push({ id: chapterIndex, title: categoria, items });

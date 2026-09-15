@@ -179,10 +179,15 @@ export interface QuoteTemplate {
   updatedAt?: string;        // updated_at
 }
 
-// Linha escolhida no configurador antes de gerar o orçamento
+// Linha escolhida no configurador antes de gerar o orçamento.
+// marginPercent e fixedExtra são opcionais: quando presentes substituem os
+// valores da receita, permitindo ajustar por obra ou por cliente sem mexer
+// na receita em si.
 export interface TemplateSelection {
   template: QuoteTemplate;
   quantity: number;
+  marginPercent?: number;
+  fixedExtra?: number;
 }
 
 export interface QuoteItem {

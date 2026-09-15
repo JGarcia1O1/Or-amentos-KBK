@@ -46,13 +46,32 @@ export default function QuoteWizard() {
       .finally(() => setLoading(false));
   }, []);
 
+  // Ajustes por linha: substituem o markup e o extra da receita, sem a alterar.
+  // Servem para adaptar a obra ou o cliente sem mexer no catálogo.
+  const [ajustes, setAjustes] = useState<
+    Record<string, { margem?: number; extra?: number }>
+  >({});
+
   const selections: TemplateSelection[] = useMemo(
     () =>
       templates
-        .map(t => ({ template: t, quantity: quantities[t.id || ''] || 0 }))
+        .map(t => {
+          const id = t.id || '';
+          const a = ajustes[id] || {};
+          return {
+            template: t,
+            quantity: quantities[id] || 0,
+            marginPercent: a.margem,
+            fixedExtra: a.extra,
+          };
+        })
         .filter(s => s.quantity > 0),
-    [templates, quantities]
+    [templates, quantities, ajustes]
   );
+
+  const setAjuste = (id: string, campo: 'margem' | 'extra', valor?: number) => {
+    setAjustes(prev => ({ ...prev, [id]: { ...prev[id], [campo]: valor } }));
+  };
 
   const resumo = useMemo(() => summarize(selections), [selections]);
 
@@ -89,6 +108,23 @@ export default function QuoteWizard() {
       matches.forEach(m => {
         const id = m.template.id || '';
         if (id) next[id] = m.quantity;
+      });
+      return next;
+    });
+
+    // Markups e extras pedidos no texto entram como ajustes da linha
+    setAjustes(prev => {
+      const next = { ...prev };
+      matches.forEach(m => {
+        const id = m.template.id || '';
+        if (!id) return;
+        if (m.marginPercent !== undefined || m.fixedExtra !== undefined) {
+          next[id] = {
+            ...next[id],
+            ...(m.marginPercent !== undefined ? { margem: m.marginPercent } : {}),
+            ...(m.fixedExtra !== undefined ? { extra: m.fixedExtra } : {}),
+          };
+        }
       });
       return next;
     });
@@ -186,7 +222,7 @@ export default function QuoteWizard() {
                 interpretarPedido();
               }
             }}
-            placeholder="Ex: cozinha lacada normal de 5,2 metros e roupeiro branco de correr com 6 m2"
+            placeholder="Ex: cozinha lacada normal de 5,2 metros com margem de 70% e roupeiro branco de correr 6 m2, extra de 500 para este cliente"
             className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 outline-none text-xs min-h-[76px] resize-y leading-relaxed focus:border-black transition"
           />
 
@@ -232,6 +268,18 @@ export default function QuoteWizard() {
                         {m.quantity} {m.template.unit}
                       </strong>{' '}
                       de {m.template.name}
+                      {m.marginPercent !== undefined && (
+                        <span className="text-gray-900">
+                          {' '}· markup {Math.round(m.marginPercent * 100)}%
+                          {m.deGeral && <span className="text-gray-400"> (geral)</span>}
+                        </span>
+                      )}
+                      {m.fixedExtra !== undefined && (
+                        <span className="text-gray-900">
+                          {' '}· extra {formatCurrency(m.fixedExtra)}
+                          {m.deGeral && <span className="text-gray-400"> (geral)</span>}
+                        </span>
+                      )}
                       {divergente && (
                         <span className="text-amber-700">
                           {' '}— atenção: esta receita é cobrada por{' '}
@@ -325,7 +373,12 @@ export default function QuoteWizard() {
               {lista.map(t => {
                 const id = t.id || '';
                 const qtd = quantities[id] || 0;
-                const linha: TemplateSelection = { template: t, quantity: qtd };
+                const linha: TemplateSelection = {
+                  template: t,
+                  quantity: qtd,
+                  marginPercent: ajustes[id]?.margem,
+                  fixedExtra: ajustes[id]?.extra,
+                };
 
                 return (
                   <div
@@ -379,6 +432,69 @@ export default function QuoteWizard() {
                         </button>
                         <span className="text-[10px] text-gray-400 w-16">{t.unit}</span>
                       </div>
+
+                      {/* Markup e extra desta linha — substituem os da receita */}
+                      {qtd > 0 && (
+                        <div className="flex items-center gap-2">
+                          <div>
+                            <span className="block text-[9px] uppercase font-bold text-gray-400 tracking-wider mb-0.5">
+                              Markup
+                            </span>
+                            <div className="flex items-center gap-1">
+                              <input
+                                type="number"
+                                min="0"
+                                step="1"
+                                value={Math.round(
+                                  (ajustes[id]?.margem ?? t.marginPercent) * 100
+                                )}
+                                onChange={e =>
+                                  setAjuste(id, 'margem', Number(e.target.value) / 100)
+                                }
+                                title={
+                                  ajustes[id]?.margem !== undefined
+                                    ? 'Ajustado nesta obra'
+                                    : 'Valor da receita'
+                                }
+                                className={`w-14 text-center text-xs font-mono border rounded-lg p-1.5 outline-none focus:border-black transition ${
+                                  ajustes[id]?.margem !== undefined
+                                    ? 'bg-amber-50 border-amber-300'
+                                    : 'bg-gray-50 border-gray-200'
+                                }`}
+                              />
+                              <span className="text-[10px] text-gray-400">%</span>
+                            </div>
+                          </div>
+
+                          <div>
+                            <span className="block text-[9px] uppercase font-bold text-gray-400 tracking-wider mb-0.5">
+                              Extra
+                            </span>
+                            <div className="flex items-center gap-1">
+                              <input
+                                type="number"
+                                min="0"
+                                step="10"
+                                value={ajustes[id]?.extra ?? t.fixedExtra}
+                                onChange={e =>
+                                  setAjuste(id, 'extra', Number(e.target.value))
+                                }
+                                title={
+                                  ajustes[id]?.extra !== undefined
+                                    ? 'Ajustado nesta obra'
+                                    : 'Valor da receita'
+                                }
+                                className={`w-20 text-center text-xs font-mono border rounded-lg p-1.5 outline-none focus:border-black transition ${
+                                  ajustes[id]?.extra !== undefined
+                                    ? 'bg-amber-50 border-amber-300'
+                                    : 'bg-gray-50 border-gray-200'
+                                }`}
+                              />
+                              <span className="text-[10px] text-gray-400">€</span>
+                            </div>
+                          </div>
+                        </div>
+                      )}
 
                       <div className="text-right w-28">
                         <span className="block text-[9px] uppercase font-bold text-gray-400 tracking-wider">
