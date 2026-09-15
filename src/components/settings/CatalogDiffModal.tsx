@@ -97,7 +97,7 @@ export default function CatalogDiffModal({
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] flex flex-col overflow-hidden">
+      <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90dvh] flex flex-col overflow-hidden">
         
         <div className="p-5 bg-amber-500 text-white flex items-center justify-between flex-shrink-0">
           <div className="flex items-center gap-3">

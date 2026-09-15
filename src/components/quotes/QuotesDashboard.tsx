@@ -244,7 +244,7 @@ export default function QuotesDashboard() {
                   <div>
                     <div className="text-xs font-bold text-blue-900 flex items-center gap-1.5">
                       <span>Orçamento Automático / Técnico</span>
-                      <span className="bg-blue-200 text-blue-800 text-[9px] font-bold px-1.5 py-0.2 rounded-full">
+                      <span className="bg-blue-200 text-blue-800 text-[10px] font-bold px-1.5 py-0.2 rounded-full">
                         Novo
                       </span>
                     </div>
@@ -417,7 +417,7 @@ export default function QuotesDashboard() {
                           <FileText className="w-3.5 h-3.5 text-gray-400" />
                           <span>{q.number}</span>
                           <span
-                            className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${
+                            className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
                               q.type === 'automatic'
                                 ? 'bg-blue-50 text-blue-700 border border-blue-200'
                                 : 'bg-gray-100 text-gray-600 border border-gray-200'

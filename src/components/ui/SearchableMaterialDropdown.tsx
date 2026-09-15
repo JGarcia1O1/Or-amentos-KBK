@@ -82,7 +82,7 @@ export function SearchableMaterialDropdown({ materials, value, onChange, placeho
                 >
                   <div className="flex flex-col truncate pr-2">
                     <span className="font-semibold text-[10px] truncate">{m.name}</span>
-                    <span className="text-[9px] text-gray-400">Ref: {m.code}</span>
+                    <span className="text-[10px] text-gray-400">Ref: {m.code}</span>
                   </div>
                   <div className="flex items-center gap-2 flex-shrink-0">
                     <span className="font-bold text-[10px]">{m.price.toFixed(2)}€</span>
@@ -93,7 +93,7 @@ export function SearchableMaterialDropdown({ materials, value, onChange, placeho
             )}
             
             {materials.length > 50 && !search.trim() && (
-              <div className="p-2 text-center text-[9px] text-gray-400 border-t border-gray-50 bg-gray-50/50">
+              <div className="p-2 text-center text-[10px] text-gray-400 border-t border-gray-50 bg-gray-50/50">
                 A mostrar 50 de {materials.length} chapas. Use a pesquisa para encontrar mais.
               </div>
             )}

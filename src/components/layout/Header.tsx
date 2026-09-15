@@ -204,7 +204,7 @@ export default function Header({ onOpenMenu }: HeaderProps = {}) {
                   <div>
                     <div className="text-[13px] font-bold text-blue-900 flex items-center gap-1.5">
                       <span>Orçamento Automático / Técnico</span>
-                      <span className="bg-blue-200 text-blue-800 text-[9px] font-bold px-1.5 py-0.5 rounded-full">
+                      <span className="bg-blue-200 text-blue-800 text-[10px] font-bold px-1.5 py-0.5 rounded-full">
                         Novo
                       </span>
                     </div>

@@ -1402,7 +1402,7 @@ export default function QuoteEditor() {
                                                   {ws.code}
                                                 </span>
                                               </label>
-                                              <span className="text-[9px] text-gray-400 font-mono">
+                                              <span className="text-[10px] text-gray-400 font-mono">
                                                 {ws.rate}€/h
                                               </span>
                                             </div>
@@ -1435,7 +1435,7 @@ export default function QuoteEditor() {
                                                 }}
                                                 className="w-full bg-gray-50 border border-gray-200 rounded px-1 text-right font-mono"
                                               />
-                                              <span className="text-[9px] text-gray-400">m</span>
+                                              <span className="text-[10px] text-gray-400">m</span>
                                             </div>
                                             <div className={`text-[10px] font-bold text-right pt-0.5 ${isActive ? 'text-gray-900' : 'text-gray-400'}`}>
                                               {formatCurrency(wsCost)}

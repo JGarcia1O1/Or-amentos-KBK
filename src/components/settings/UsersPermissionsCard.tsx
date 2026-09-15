@@ -186,12 +186,12 @@ export default function UsersPermissionsCard() {
                       {user.displayName}
                     </span>
                     {isSelf && (
-                      <span className="text-[9px] bg-gray-200 text-gray-700 px-1.5 py-0.5 rounded font-bold uppercase tracking-wider">
+                      <span className="text-[10px] bg-gray-200 text-gray-700 px-1.5 py-0.5 rounded font-bold uppercase tracking-wider">
                         Tu
                       </span>
                     )}
                     {!user.isActive && (
-                      <span className="text-[9px] bg-red-100 text-red-700 px-1.5 py-0.5 rounded font-bold uppercase tracking-wider">
+                      <span className="text-[10px] bg-red-100 text-red-700 px-1.5 py-0.5 rounded font-bold uppercase tracking-wider">
                         Desativado
                       </span>
                     )}

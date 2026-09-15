@@ -260,7 +260,7 @@ export default function Sidebar({ onNavigate }: SidebarProps = {}) {
               <span className="truncate">Configurações Gerais</span>
               {isAdmin && pendingApprovals.length > 0 && (
                 <span
-                  className="ml-auto text-[9px] bg-red-500 text-white px-1.5 py-0.5 rounded-full font-bold shrink-0"
+                  className="ml-auto text-[10px] bg-red-500 text-white px-1.5 py-0.5 rounded-full font-bold shrink-0"
                   title="Pedidos de alteração à espera de aprovação"
                 >
                   {pendingApprovals.length}

@@ -169,7 +169,7 @@ export default function ClientsView() {
                             <span className="text-xs font-bold text-gray-900 group-hover:text-blue-900 truncate">
                               {q.number} {q.projectName ? `- ${q.projectName}` : ''}
                             </span>
-                            <span className="text-[9px] text-gray-500">
+                            <span className="text-[10px] text-gray-500">
                               {q.date} • {q.status}
                             </span>
                           </div>
@@ -320,7 +320,7 @@ export default function ClientsView() {
       {/* Modal Todos os Orçamentos */}
       {showAllQuotesModal && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-xl shadow-2xl max-w-lg w-full max-h-[85vh] flex flex-col">
+          <div className="bg-white rounded-xl shadow-2xl max-w-lg w-full max-h-[85dvh] flex flex-col">
             {(() => {
               const activeClient = clients.find(c => c.id === showAllQuotesModal);
               if (!activeClient) return null;

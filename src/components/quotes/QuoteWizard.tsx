@@ -390,7 +390,7 @@ export default function QuoteWizard() {
                         <span className="text-xs font-semibold text-gray-900">{t.name}</span>
                         {!t.isConfirmed && (
                           <span
-                            className="text-[9px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded font-bold uppercase tracking-wider"
+                            className="text-[10px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded font-bold uppercase tracking-wider"
                             title="Custo ainda não validado pela produção"
                           >
                             Por confirmar
@@ -437,7 +437,7 @@ export default function QuoteWizard() {
                       {qtd > 0 && (
                         <div className="flex items-center gap-2">
                           <div>
-                            <span className="block text-[9px] uppercase font-bold text-gray-400 tracking-wider mb-0.5">
+                            <span className="block text-[10px] uppercase font-bold text-gray-400 tracking-wider mb-0.5">
                               Markup
                             </span>
                             <div className="flex items-center gap-1">
@@ -467,7 +467,7 @@ export default function QuoteWizard() {
                           </div>
 
                           <div>
-                            <span className="block text-[9px] uppercase font-bold text-gray-400 tracking-wider mb-0.5">
+                            <span className="block text-[10px] uppercase font-bold text-gray-400 tracking-wider mb-0.5">
                               Extra
                             </span>
                             <div className="flex items-center gap-1">
@@ -497,7 +497,7 @@ export default function QuoteWizard() {
                       )}
 
                       <div className="text-right w-28">
-                        <span className="block text-[9px] uppercase font-bold text-gray-400 tracking-wider">
+                        <span className="block text-[10px] uppercase font-bold text-gray-400 tracking-wider">
                           Venda
                         </span>
                         <span className="font-mono text-xs font-bold text-gray-900">
