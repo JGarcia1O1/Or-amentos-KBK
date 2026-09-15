@@ -16,6 +16,7 @@ import { Workstation, CompanyInfo } from '@/types';
 import ConditionsLivePreview from './ConditionsLivePreview';
 import BackupCard from './BackupCard';
 import UsersPermissionsCard from './UsersPermissionsCard';
+import QuoteTemplatesCard from './QuoteTemplatesCard';
 
 export default function SettingsView() {
   const {
@@ -54,6 +55,11 @@ export default function SettingsView() {
       {/* 0.1 UTILIZADORES & PERMISSÕES (Apenas Administrador)          */}
       {/* ============================================================ */}
       {isAdmin && <UsersPermissionsCard />}
+
+      {/* ============================================================ */}
+      {/* 0.2 RECEITAS DO CONFIGURADOR DE ORÇAMENTOS                    */}
+      {/* ============================================================ */}
+      <QuoteTemplatesCard />
 
       {/* ============================================================ */}
       {/* 0. APROVAÇÕES PENDENTES (Apenas Administrador)                */}
