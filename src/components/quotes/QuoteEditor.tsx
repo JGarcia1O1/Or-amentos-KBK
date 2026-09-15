@@ -38,6 +38,10 @@ import {
   Cpu,
   Layers,
   Wrench,
+  Copy,
+  CheckCircle2,
+  XCircle,
+  Lock,
 } from 'lucide-react';
 
 export default function QuoteEditor() {
@@ -324,6 +328,52 @@ export default function QuoteEditor() {
     });
 
     updateSelectedQuote({ ...quote, chapters: newChapters });
+  };
+
+  // Duplicar Artigo — em cozinhas e roupeiros os módulos repetem-se com
+  // pequenas variações, por isso copiar e ajustar poupa muito tempo.
+  // A cópia leva tudo (modo de cálculo, configuração automática, ferragens),
+  // com id novo e um código provisório; a numeração final é sempre gerada
+  // on-the-fly a partir da posição e da flag isSubItem.
+  const handleDuplicateItem = (chapterIndex: number, itemIndex: number) => {
+    const original = quote.chapters[chapterIndex].items[itemIndex];
+
+    const copy: QuoteItem = {
+      ...JSON.parse(JSON.stringify(original)),
+      id: `${chapterIndex + 1}.${Date.now()}`,
+    };
+
+    const newChapters = quote.chapters.map((chap, idx) => {
+      if (idx !== chapterIndex) return chap;
+      const items = [...chap.items];
+      items.splice(itemIndex + 1, 0, copy); // entra logo a seguir ao original
+      return { ...chap, items };
+    });
+
+    updateSelectedQuote({ ...quote, chapters: newChapters });
+    toast.success('Artigo duplicado.');
+  };
+
+  // ============================================================
+  // ÂMBITO DA PROPOSTA — o que está incluído e o que fica de fora.
+  // Listas simples de texto, guardadas no orçamento.
+  // ============================================================
+  type ScopeList = 'scopeIncluded' | 'scopeExcluded';
+
+  const handleAddScope = (list: ScopeList) => {
+    const current = quote[list] || [];
+    updateSelectedQuote({ ...quote, [list]: [...current, ''] });
+  };
+
+  const handleUpdateScope = (list: ScopeList, index: number, value: string) => {
+    const current = [...(quote[list] || [])];
+    current[index] = value;
+    updateSelectedQuote({ ...quote, [list]: current });
+  };
+
+  const handleRemoveScope = (list: ScopeList, index: number) => {
+    const current = (quote[list] || []).filter((_, i) => i !== index);
+    updateSelectedQuote({ ...quote, [list]: current });
   };
 
   const handleUpdateItem = (
@@ -1013,16 +1063,26 @@ export default function QuoteEditor() {
                             {formatCurrency(sellTotal)}
                           </td>
 
-                          {/* Remover Artigo */}
+                          {/* Duplicar / Remover Artigo */}
                           <td className="py-3 px-2 text-center align-top">
-                            <button
-                              type="button"
-                              onClick={() => handleRemoveItem(cIdx, iIdx)}
-                              className="text-gray-300 hover:text-red-500 transition"
-                              title="Remover Artigo"
-                            >
-                              <X className="w-3.5 h-3.5" />
-                            </button>
+                            <div className="inline-flex items-center gap-1">
+                              <button
+                                type="button"
+                                onClick={() => handleDuplicateItem(cIdx, iIdx)}
+                                className="text-gray-300 hover:text-gray-900 transition"
+                                title="Duplicar Artigo"
+                              >
+                                <Copy className="w-3.5 h-3.5" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveItem(cIdx, iIdx)}
+                                className="text-gray-300 hover:text-red-500 transition"
+                                title="Remover Artigo"
+                              >
+                                <X className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
                           </td>
                         </tr>
 
@@ -1281,9 +1341,92 @@ export default function QuoteEditor() {
         </button>
       </div>
 
+      {/* 2.1 ÂMBITO DA PROPOSTA */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mt-6">
+        {([
+          {
+            list: 'scopeIncluded' as ScopeList,
+            title: 'Incluído no Âmbito',
+            hint: 'Ex: Desmontagem do mobiliário existente, transporte e montagem.',
+            icon: <CheckCircle2 className="w-4 h-4 text-emerald-600" />,
+          },
+          {
+            list: 'scopeExcluded' as ScopeList,
+            title: 'Excluído do Âmbito',
+            hint: 'Ex: Trabalhos de eletricidade, canalização e alvenaria.',
+            icon: <XCircle className="w-4 h-4 text-red-500" />,
+          },
+        ]).map(section => {
+          const entries = quote[section.list] || [];
+          return (
+            <div
+              key={section.list}
+              className="bg-white rounded-2xl border border-gray-200 shadow-xs p-5 space-y-3"
+            >
+              <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+                <div className="flex items-center gap-2">
+                  {section.icon}
+                  <h3 className="text-xs font-bold text-gray-900">{section.title}</h3>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => handleAddScope(section.list)}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-black text-white rounded-lg hover:bg-gray-800 text-xs font-semibold transition"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  Adicionar
+                </button>
+              </div>
+
+              {entries.length === 0 ? (
+                <p className="text-[11px] text-gray-400 leading-relaxed py-1">
+                  {section.hint}
+                </p>
+              ) : (
+                <div className="space-y-2">
+                  {entries.map((entry, idx) => (
+                    <div key={idx} className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        value={entry}
+                        onChange={e => handleUpdateScope(section.list, idx, e.target.value)}
+                        placeholder={section.hint}
+                        className="flex-1 text-xs bg-gray-50 border border-gray-200 rounded-lg p-2 outline-none focus:border-black transition"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveScope(section.list, idx)}
+                        className="text-gray-300 hover:text-red-500 transition p-1"
+                        title="Remover linha"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Espaço para a barra fixa inferior não tapar o âmbito */}
+      <div className="h-20" />
+
       {/* 3. Barra Fixa Inferior de Rentabilidade (Sticky Footer) */}
       <div className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-gray-200 px-8 py-3.5 z-40 shadow-xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-6">
+          {/* Marca que estes números são internos e não saem na proposta */}
+          <div
+            className="flex items-center gap-1.5 text-[10px] font-bold text-gray-400 uppercase tracking-wider"
+            title="Custo, margem e lucro são valores internos — não aparecem no PDF enviado ao cliente"
+          >
+            <Lock className="w-3 h-3" />
+            Interno
+          </div>
+
+          <div className="h-7 w-px bg-gray-200" />
+
           <div>
             <span className="block text-[10px] uppercase font-bold text-gray-400 tracking-wider">
               Custo Estimado

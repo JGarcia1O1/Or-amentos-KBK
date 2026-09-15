@@ -33,6 +33,9 @@ export const QuoteService = {
       paymentConditions: q.payment_conditions,
       deliveryTerms: q.delivery_terms,
       validityDays: q.validity_days,
+      // Orçamentos antigos não têm estas colunas preenchidas — daí o fallback
+      scopeIncluded: q.scope_included || [],
+      scopeExcluded: q.scope_excluded || [],
       responsible: q.created_by,
       lastEditedAt: q.last_edited_at
     }));
@@ -62,6 +65,8 @@ export const QuoteService = {
           payment_conditions: quote.paymentConditions,
           delivery_terms: quote.deliveryTerms,
           validity_days: quote.validityDays,
+          scope_included: quote.scopeIncluded || [],
+          scope_excluded: quote.scopeExcluded || [],
           created_by: quote.responsible,
           last_edited_at: quote.lastEditedAt || Date.now()
         }
@@ -90,6 +95,8 @@ export const QuoteService = {
       payment_conditions: quote.paymentConditions,
       delivery_terms: quote.deliveryTerms,
       validity_days: quote.validityDays,
+      scope_included: quote.scopeIncluded || [],
+      scope_excluded: quote.scopeExcluded || [],
       created_by: quote.responsible,
       last_edited_at: quote.lastEditedAt || Date.now()
     }));

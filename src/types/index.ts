@@ -192,6 +192,11 @@ export interface Quote {
   paymentConditions?: string;
   deliveryTerms?: string;
   validityDays?: number;
+  // Âmbito da proposta — o que está e o que não está incluído.
+  // Evita discussões do género "eu pensava que estava incluído".
+  // Guardado no JSONB do orçamento; não exige migração de colunas.
+  scopeIncluded?: string[];
+  scopeExcluded?: string[];
   lockedBy?: string; // Para preparar ambiente Multi-user
   lastEditedAt?: number; // Timestamp da última edição
 }
