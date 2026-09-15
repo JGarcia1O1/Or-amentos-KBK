@@ -137,8 +137,8 @@ export default function TechnicalCalculatorModal({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 overflow-y-auto">
-      <div className="bg-white rounded-2xl border border-gray-200 shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden my-auto">
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-stretch sm:items-center justify-center p-0 sm:p-4 z-50 sm:overflow-y-auto">
+      <div className="bg-white sm:rounded-2xl border-0 sm:border border-gray-200 shadow-2xl w-full sm:max-w-4xl h-[100dvh] sm:h-auto sm:max-h-[90dvh] flex flex-col overflow-hidden sm:my-auto">
         {/* Cabeçalho do Modal */}
         <div className="p-4 bg-gray-900 text-white flex items-center justify-between flex-shrink-0">
           <div className="flex items-center gap-2.5">

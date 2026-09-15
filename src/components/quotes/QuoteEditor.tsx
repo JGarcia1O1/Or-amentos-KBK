@@ -57,6 +57,7 @@ export default function QuoteEditor() {
     hardware,
     edges,
     openPdfPreview,
+    hideInternal,
   } = useApp();
 
   // Itens expandidos para o painel de fabrico automático
@@ -67,6 +68,12 @@ export default function QuoteEditor() {
     const primeiro = selectedQuote?.chapters?.[0]?.items?.[0];
     return Math.round((primeiro?.marginPercent ?? 0.6) * 100);
   });
+
+  // Cartões abertos no telemóvel (a lista arranca toda fechada)
+  const [cartaoAberto, setCartaoAberto] = useState<Record<string, boolean>>({});
+
+  // Barra de rentabilidade no telemóvel: fechada mostra só o total
+  const [rentabilidadeAberta, setRentabilidadeAberta] = useState(false);
 
   // Estado do Modal da Calculadora Técnica (Aparador / Peça a Peça)
   const [activeItemForCalc, setActiveItemForCalc] = useState<{
@@ -566,6 +573,50 @@ export default function QuoteEditor() {
     setActiveItemForCalc(null);
   };
 
+  // Numera os artigos e calcula os valores de venda uma única vez por capítulo.
+  // A mesma lista serve a tabela do desktop e os cartões do telemóvel.
+  const enriquecerItens = (chap: QuoteChapter, cIdx: number) => {
+    let principal = 0;
+    let sub = 0;
+    return chap.items.map((item, iIdx) => {
+      if (item.isSubItem) {
+        sub++;
+      } else {
+        principal++;
+        sub = 0;
+      }
+      return {
+        item,
+        iIdx,
+        displayCode: item.isSubItem
+          ? `${cIdx + 1}.${principal}.${sub}`
+          : `${cIdx + 1}.${principal}`,
+        sellUnit: calculateItemSellUnit(item),
+        sellTotal: calculateItemSellTotal(item),
+        isAuto: item.calculationMode === 'automatic',
+      };
+    });
+  };
+
+  const alternarCartao = (id: string) =>
+    setCartaoAberto(prev => ({ ...prev, [id]: !prev[id] }));
+
+  // Passos dos botões − e + no telemóvel
+  const passoMargem = (cIdx: number, iIdx: number, atual: number, delta: number) => {
+    const emPercent = Math.round((atual || 0) * 100) + delta;
+    handleUpdateItem(cIdx, iIdx, 'marginPercent', Math.max(0, emPercent) / 100);
+  };
+
+  const passoQuantidade = (cIdx: number, iIdx: number, atual: number, delta: number) => {
+    handleUpdateItem(cIdx, iIdx, 'quantity', Math.max(0, (atual || 0) + delta));
+  };
+
+  // Saltar para um capítulo a partir da barra deslizante
+  const irParaCapitulo = (cIdx: number) => {
+    const alvo = document.getElementById(`capitulo-${cIdx}`);
+    if (alvo) alvo.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+
   // Cálculos Globais
   const totalCost = calculateQuoteCost(quote);
   const subtotal = calculateQuoteSubtotal(quote);
@@ -574,9 +625,27 @@ export default function QuoteEditor() {
   const overallMargin = calculateQuoteMarginPercent(quote);
 
   return (
-    <div className="p-6 space-y-6 pb-28 w-full">
+    <div className="p-4 sm:p-5 lg:p-6 space-y-4 sm:space-y-6 pb-44 md:pb-28 w-full">
+      {/* Barra deslizante de capítulos — só no telemóvel */}
+      {quote.chapters.length > 1 && (
+        <div className="md:hidden -mx-4 px-4 sticky top-0 z-20 bg-gray-50/95 backdrop-blur-sm py-2 border-b border-gray-200">
+          <div className="flex gap-2 overflow-x-auto scroll-limpo">
+            {quote.chapters.map((chap, cIdx) => (
+              <button
+                key={chap.id}
+                type="button"
+                onClick={() => irParaCapitulo(cIdx)}
+                className="shrink-0 h-8 px-3 rounded-full bg-white border border-gray-200 text-gray-600 text-xs font-semibold active:bg-gray-100 transition-colors max-w-[60vw] truncate"
+              >
+                {cIdx + 1} · {chap.title || 'Sem título'}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* 1. Cabeçalho de Dados Gerais do Orçamento */}
-      <div className="bg-white p-5 rounded-2xl border border-gray-200 shadow-xs space-y-4">
+      <div className="bg-white p-4 sm:p-5 rounded-2xl border border-gray-200 shadow-xs space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-gray-100 pb-3 gap-3">
           <div className="flex items-center gap-3">
             <button
@@ -814,12 +883,13 @@ export default function QuoteEditor() {
         {quote.chapters.map((chap, cIdx) => (
           <div
             key={chap.id}
-            className="bg-white rounded-2xl border border-gray-200 shadow-xs overflow-hidden"
+            id={`capitulo-${cIdx}`}
+            className="bg-white rounded-2xl border border-gray-200 shadow-xs overflow-hidden scroll-mt-20"
           >
             {/* Cabeçalho do Capítulo */}
-            <div className="bg-gray-100/70 px-4 py-3 flex items-center justify-between border-b border-gray-200">
-              <div className="flex items-center gap-2 flex-1">
-                <span className="w-5 h-5 rounded-full bg-black text-white text-[10px] font-bold flex items-center justify-center">
+            <div className="bg-gray-100/70 px-3 sm:px-4 py-2.5 sm:py-3 flex items-center justify-between gap-2 border-b border-gray-200">
+              <div className="flex items-center gap-2 flex-1 min-w-0">
+                <span className="w-5 h-5 shrink-0 rounded-full bg-black text-white text-[10px] font-bold flex items-center justify-center">
                   {cIdx + 1}
                 </span>
                 <input
@@ -827,18 +897,18 @@ export default function QuoteEditor() {
                   value={chap.title}
                   onChange={e => handleUpdateChapterTitle(cIdx, e.target.value)}
                   placeholder="Título do Capítulo (ex: Roupeiros, Portas, Mob. Diverso)"
-                  className="font-bold text-xs bg-transparent border-b border-dashed border-gray-400 focus:border-black outline-none px-1 text-gray-900 w-80"
+                  className="font-bold text-[13px] bg-transparent border-b border-dashed border-gray-400 focus:border-black outline-none px-1 text-gray-900 w-full sm:w-80 min-w-0"
                 />
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 shrink-0">
                 <button
                   type="button"
                   onClick={() => handleAddItem(cIdx)}
-                  className="text-xs bg-white border border-gray-200 hover:border-black text-gray-800 font-semibold px-2.5 py-1 rounded-lg flex items-center gap-1 transition shadow-2xs"
+                  className="text-xs bg-white border border-gray-200 hover:border-black text-gray-800 font-semibold px-2.5 h-9 rounded-lg flex items-center gap-1 transition shadow-2xs"
                 >
                   <Plus className="w-3.5 h-3.5" />
-                  <span>Adicionar Artigo</span>
+                  <span className="hidden sm:inline">Adicionar Artigo</span>
                 </button>
                 <button
                   type="button"
@@ -861,52 +931,58 @@ export default function QuoteEditor() {
                 <span className="text-gray-300">Clique em "Adicionar Artigo" para começar.</span>
               </div>
             ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs border-collapse">
-                <thead className="bg-gray-50/50 text-gray-400 font-semibold text-[10px] uppercase border-b border-gray-100">
-                  <tr>
-                    <th className="py-2.5 px-3 w-12">Art.</th>
-                    <th className="py-2.5 px-3 min-w-[280px]">
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full text-left text-[13px] border-collapse num-tabular">
+                <thead className="text-gray-400 font-semibold uppercase border-b border-gray-100">
+                  {/* Faixa que separa o que é interno do que o cliente vê */}
+                  <tr className="text-[11px] tracking-wider">
+                    <th colSpan={4} className="pt-2.5 pb-1 px-3 font-semibold">
+                      Artigo
+                    </th>
+                    {!hideInternal && (
+                      <th
+                        colSpan={3}
+                        className="pt-2.5 pb-1 px-3 font-semibold bg-amber-50/70 text-amber-700"
+                      >
+                        Interno · não sai no PDF
+                      </th>
+                    )}
+                    <th colSpan={3} className="pt-2.5 pb-1 px-3 font-semibold text-right">
+                      Venda ao cliente
+                    </th>
+                  </tr>
+                  <tr className="bg-gray-50/50 text-[11px]">
+                    <th className="py-2 px-3 w-12 font-semibold">Art.</th>
+                    <th className="py-2 px-3 min-w-[280px] font-semibold">
                       Designação Técnica do Móvel / Serviço
                     </th>
-                    <th className="py-2.5 px-3 w-16 text-center">Un.</th>
-                    <th className="py-2.5 px-3 w-16 text-center">Qtd</th>
-                    <th className="py-2.5 px-3 w-36 text-right bg-amber-50/40 text-amber-800">
-                      Custo Unit (€)
-                    </th>
-                    <th className="py-2.5 px-3 w-20 text-center bg-amber-50/40 text-amber-800">
-                      Margem %
-                    </th>
-                    <th className="py-2.5 px-3 w-24 text-right bg-amber-50/40 text-amber-800">
-                      Extra (€)
-                    </th>
-                    <th className="py-2.5 px-3 w-28 text-right font-bold text-gray-800">
+                    <th className="py-2 px-3 w-16 text-center font-semibold">Un.</th>
+                    <th className="py-2 px-3 w-16 text-center font-semibold">Qtd</th>
+                    {!hideInternal && (
+                      <>
+                        <th className="py-2 px-3 w-36 text-right bg-amber-50/40 text-amber-800 font-semibold">
+                          Custo Unit (€)
+                        </th>
+                        <th className="py-2 px-3 w-20 text-center bg-amber-50/40 text-amber-800 font-semibold">
+                          Margem %
+                        </th>
+                        <th className="py-2 px-3 w-24 text-right bg-amber-50/40 text-amber-800 font-semibold">
+                          Extra (€)
+                        </th>
+                      </>
+                    )}
+                    <th className="py-2 px-3 w-28 text-right font-bold text-gray-800">
                       Venda Unit (€)
                     </th>
-                    <th className="py-2.5 px-3 w-28 text-right font-bold text-gray-900">
+                    <th className="py-2 px-3 w-28 text-right font-bold text-gray-900">
                       Venda Total (€)
                     </th>
-                    <th className="py-2.5 px-2 w-10 text-center"></th>
+                    <th className="py-2 px-2 w-10 text-center"></th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
-                  {(() => {
-                    let mainItemCount = 0;
-                    let subItemCount = 0;
-                    return chap.items.map((item, iIdx) => {
-                      if (item.isSubItem) {
-                        subItemCount++;
-                      } else {
-                        mainItemCount++;
-                        subItemCount = 0;
-                      }
-                      const displayCode = item.isSubItem
-                        ? `${cIdx + 1}.${mainItemCount}.${subItemCount}`
-                        : `${cIdx + 1}.${mainItemCount}`;
-                      
-                      const sellUnit = calculateItemSellUnit(item);
-                      const sellTotal = calculateItemSellTotal(item);
-                      const isAuto = item.calculationMode === 'automatic';
+                  {enriquecerItens(chap, cIdx).map(
+                    ({ item, iIdx, displayCode, sellUnit, sellTotal, isAuto }) => {
                       const isExpanded = isAuto && (expandedItems[item.id] !== false);
 
                       const autoCfg: AutomaticItemConfig = item.automaticConfig || {
@@ -1052,6 +1128,9 @@ export default function QuoteEditor() {
                             />
                           </td>
 
+                          {/* Custo, margem e extra — escondidos no modo cliente */}
+                          {!hideInternal && (
+                          <>
                           {/* Custo Unitário com Botão para Ficha Técnica */}
                           <td className="py-3 px-3 text-right bg-amber-50/20 align-top">
                             <div className="flex items-center justify-end gap-1">
@@ -1130,6 +1209,8 @@ export default function QuoteEditor() {
                               className="w-16 text-right font-mono bg-white border border-gray-200 rounded px-1 py-0.5 outline-none"
                             />
                           </td>
+                          </>
+                          )}
 
                           {/* Preço de Venda Unitário Calculado */}
                           <td className="py-3 px-3 text-right font-mono font-semibold text-gray-700 align-top">
@@ -1167,7 +1248,7 @@ export default function QuoteEditor() {
                         {/* SUB-LINHA: PAINEL DE FABRICO & CÁLCULO AUTOMÁTICO */}
                         {isAuto && isExpanded && (
                           <tr className="bg-blue-50/20 border-b border-blue-100">
-                            <td colSpan={10} className="p-4 space-y-4">
+                            <td colSpan={hideInternal ? 7 : 10} className="p-4 space-y-4">
                               <div className="bg-white p-4 rounded-xl border border-blue-200 shadow-2xs space-y-4 text-xs">
                                 <div className="flex items-center justify-between border-b border-gray-100 pb-2">
                                   <div className="flex items-center gap-2">
@@ -1398,11 +1479,313 @@ export default function QuoteEditor() {
                         )}
                       </React.Fragment>
                       );
-                    })
-                  })()}
+                    }
+                  )}
                 </tbody>
               </table>
             </div>
+            )}
+
+            {/* Lista em cartões — só no telemóvel */}
+            {chap.items.length > 0 && (
+              <div className="md:hidden divide-y divide-gray-100">
+                {enriquecerItens(chap, cIdx).map(
+                  ({ item, iIdx, displayCode, sellUnit, sellTotal, isAuto }) => {
+                    const aberto = !!cartaoAberto[item.id];
+                    return (
+                      <div key={item.id} className={isAuto ? 'bg-blue-50/20' : ''}>
+                        {/* Linha fechada: designação, medida e total */}
+                        <button
+                          type="button"
+                          onClick={() => alternarCartao(item.id)}
+                          aria-expanded={aberto}
+                          className="w-full flex items-center gap-3 px-4 py-3 text-left active:bg-gray-50 transition-colors"
+                        >
+                          <div className="min-w-0 flex-1">
+                            <div className="text-[13px] font-semibold text-gray-900 leading-snug line-clamp-2">
+                              {item.designation || 'Sem designação'}
+                            </div>
+                            <div className="font-mono text-[11px] text-gray-400 mt-0.5 flex items-center gap-1.5">
+                              <span>{displayCode}</span>
+                              <span>·</span>
+                              <span>
+                                {item.quantity} {item.unit}
+                              </span>
+                              {isAuto && (
+                                <>
+                                  <span>·</span>
+                                  <span className="text-blue-600 font-semibold">auto</span>
+                                </>
+                              )}
+                            </div>
+                          </div>
+                          <div className="font-mono text-sm font-bold text-gray-900 num-tabular shrink-0">
+                            {formatCurrency(sellTotal)}
+                          </div>
+                          {aberto ? (
+                            <ChevronUp className="w-4 h-4 text-gray-300 shrink-0" />
+                          ) : (
+                            <ChevronDown className="w-4 h-4 text-gray-300 shrink-0" />
+                          )}
+                        </button>
+
+                        {/* Cartão aberto: campos editáveis */}
+                        {aberto && (
+                          <div className="px-4 pb-4 space-y-3">
+                            <div>
+                              <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">
+                                Designação
+                              </label>
+                              <textarea
+                                value={item.designation}
+                                onChange={e =>
+                                  handleUpdateItem(cIdx, iIdx, 'designation', e.target.value)
+                                }
+                                rows={2}
+                                placeholder="Descrição técnica do móvel, acabamentos, ferragens..."
+                                className="w-full bg-white border border-gray-200 rounded-lg p-2.5 outline-none resize-none focus:border-gray-400"
+                              />
+                            </div>
+
+                            <div className="flex gap-2">
+                              <div className="flex-1">
+                                <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">
+                                  Quantidade
+                                </label>
+                                <div className="flex items-center h-11 border border-gray-200 rounded-lg bg-white overflow-hidden">
+                                  <button
+                                    type="button"
+                                    aria-label="Menos um"
+                                    onClick={() =>
+                                      passoQuantidade(cIdx, iIdx, item.quantity, -1)
+                                    }
+                                    className="w-11 h-full bg-gray-50 border-r border-gray-200 text-gray-600 text-lg active:bg-gray-100"
+                                  >
+                                    −
+                                  </button>
+                                  <input
+                                    type="number"
+                                    inputMode="decimal"
+                                    value={item.quantity}
+                                    onFocus={e => e.target.select()}
+                                    onChange={e =>
+                                      handleUpdateItem(
+                                        cIdx,
+                                        iIdx,
+                                        'quantity',
+                                        Number(e.target.value)
+                                      )
+                                    }
+                                    className="flex-1 min-w-0 text-center font-mono font-bold outline-none bg-transparent"
+                                  />
+                                  <button
+                                    type="button"
+                                    aria-label="Mais um"
+                                    onClick={() =>
+                                      passoQuantidade(cIdx, iIdx, item.quantity, 1)
+                                    }
+                                    className="w-11 h-full bg-gray-50 border-l border-gray-200 text-gray-600 text-lg active:bg-gray-100"
+                                  >
+                                    +
+                                  </button>
+                                </div>
+                              </div>
+                              <div className="w-24">
+                                <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">
+                                  Unidade
+                                </label>
+                                <input
+                                  type="text"
+                                  value={item.unit}
+                                  onChange={e =>
+                                    handleUpdateItem(cIdx, iIdx, 'unit', e.target.value)
+                                  }
+                                  className="w-full h-11 px-3 border border-gray-200 rounded-lg bg-white outline-none focus:border-gray-400"
+                                />
+                              </div>
+                            </div>
+
+                            {/* Bloco interno — desaparece no modo cliente */}
+                            {!hideInternal && (
+                              <div className="border border-amber-200 bg-amber-50 rounded-xl p-3 space-y-2.5">
+                                <div className="flex items-center gap-1.5 text-[10px] font-bold text-amber-700 uppercase tracking-wider">
+                                  <Lock className="w-3 h-3" />
+                                  Interno · não sai no PDF
+                                </div>
+
+                                <div className="flex items-center gap-2">
+                                  <span className="w-16 shrink-0 text-xs font-semibold text-amber-800">
+                                    Custo
+                                  </span>
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      setActiveItemForCalc({
+                                        chapterIndex: cIdx,
+                                        itemIndex: iIdx,
+                                        item,
+                                      })
+                                    }
+                                    className="w-11 h-11 shrink-0 flex items-center justify-center rounded-lg border border-amber-200 bg-white text-amber-700 active:bg-amber-100"
+                                    title="Desdobramento peça a peça"
+                                  >
+                                    <Calculator className="w-4 h-4" />
+                                  </button>
+                                  <input
+                                    type="number"
+                                    inputMode="decimal"
+                                    step="0.5"
+                                    value={item.costUnit}
+                                    onFocus={e => e.target.select()}
+                                    onChange={e =>
+                                      handleUpdateItem(
+                                        cIdx,
+                                        iIdx,
+                                        'costUnit',
+                                        Number(e.target.value)
+                                      )
+                                    }
+                                    className="flex-1 min-w-0 h-11 px-3 text-right font-mono font-semibold border border-amber-200 rounded-lg bg-white outline-none focus:border-amber-400"
+                                  />
+                                </div>
+
+                                <div className="flex items-center gap-2">
+                                  <span className="w-16 shrink-0 text-xs font-semibold text-amber-800">
+                                    Margem
+                                  </span>
+                                  <div className="flex-1 flex items-center h-11 border border-amber-200 rounded-lg bg-white overflow-hidden">
+                                    <button
+                                      type="button"
+                                      aria-label="Menos cinco por cento"
+                                      onClick={() =>
+                                        passoMargem(cIdx, iIdx, item.marginPercent, -5)
+                                      }
+                                      className="w-11 h-full bg-amber-50 border-r border-amber-200 text-amber-700 text-lg active:bg-amber-100"
+                                    >
+                                      −
+                                    </button>
+                                    <div className="flex-1 min-w-0 flex items-center justify-center gap-1">
+                                      <input
+                                        type="number"
+                                        inputMode="decimal"
+                                        step="1"
+                                        min="0"
+                                        value={Math.round((item.marginPercent || 0) * 100)}
+                                        onFocus={e => e.target.select()}
+                                        onChange={e =>
+                                          handleUpdateItem(
+                                            cIdx,
+                                            iIdx,
+                                            'marginPercent',
+                                            (Number(e.target.value) || 0) / 100
+                                          )
+                                        }
+                                        className="w-12 text-right font-mono font-bold outline-none bg-transparent"
+                                      />
+                                      <span className="text-xs text-gray-400 font-semibold">%</span>
+                                    </div>
+                                    <button
+                                      type="button"
+                                      aria-label="Mais cinco por cento"
+                                      onClick={() =>
+                                        passoMargem(cIdx, iIdx, item.marginPercent, 5)
+                                      }
+                                      className="w-11 h-full bg-amber-50 border-l border-amber-200 text-amber-700 text-lg active:bg-amber-100"
+                                    >
+                                      +
+                                    </button>
+                                  </div>
+                                </div>
+
+                                <div className="flex items-center gap-2">
+                                  <span className="w-16 shrink-0 text-xs font-semibold text-amber-800">
+                                    Extra
+                                  </span>
+                                  <input
+                                    type="number"
+                                    inputMode="decimal"
+                                    step="10"
+                                    value={item.fixedExtra}
+                                    onFocus={e => e.target.select()}
+                                    onChange={e =>
+                                      handleUpdateItem(
+                                        cIdx,
+                                        iIdx,
+                                        'fixedExtra',
+                                        Number(e.target.value)
+                                      )
+                                    }
+                                    className="flex-1 min-w-0 h-11 px-3 text-right font-mono border border-amber-200 rounded-lg bg-white outline-none focus:border-amber-400"
+                                  />
+                                </div>
+                              </div>
+                            )}
+
+                            <div className="flex items-end justify-between pt-1 border-t border-gray-100">
+                              <div className="pt-2">
+                                <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">
+                                  Venda unitária
+                                </div>
+                                <div className="font-mono text-[13px] text-gray-500 num-tabular">
+                                  {formatCurrency(sellUnit)}
+                                </div>
+                              </div>
+                              <div className="pt-2 text-right">
+                                <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">
+                                  Total da linha
+                                </div>
+                                <div className="font-mono text-lg font-extrabold text-gray-900 num-tabular">
+                                  {formatCurrency(sellTotal)}
+                                </div>
+                              </div>
+                            </div>
+
+                            <div className="flex items-center gap-2 pt-1">
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  handleUpdateItem(cIdx, iIdx, 'isSubItem', !item.isSubItem)
+                                }
+                                className={`h-11 flex-1 rounded-lg border text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors ${
+                                  item.isSubItem
+                                    ? 'bg-blue-50 border-blue-200 text-blue-700'
+                                    : 'bg-white border-gray-200 text-gray-500'
+                                }`}
+                              >
+                                <CornerDownRight className="w-3.5 h-3.5" />
+                                Sub-tópico
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleDuplicateItem(cIdx, iIdx)}
+                                className="h-11 w-11 rounded-lg border border-gray-200 bg-white text-gray-500 flex items-center justify-center active:bg-gray-50"
+                                title="Duplicar artigo"
+                              >
+                                <Copy className="w-4 h-4" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveItem(cIdx, iIdx)}
+                                className="h-11 w-11 rounded-lg border border-gray-200 bg-white text-gray-400 flex items-center justify-center active:bg-red-50 active:text-red-500"
+                                title="Remover artigo"
+                              >
+                                <X className="w-4 h-4" />
+                              </button>
+                            </div>
+
+                            {isAuto && (
+                              <p className="text-[11px] text-blue-700 bg-blue-50 border border-blue-100 rounded-lg p-2.5 leading-relaxed">
+                                Este artigo tem cálculo automático por chapas e máquinas.
+                                O painel de fabrico abre-se no computador.
+                              </p>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  }
+                )}
+              </div>
             )}
           </div>
         ))}
@@ -1488,72 +1871,170 @@ export default function QuoteEditor() {
         })}
       </div>
 
-      {/* Espaço para a barra fixa inferior não tapar o âmbito */}
-      <div className="h-20" />
+      {/* Botão flutuante para adicionar artigo — só no telemóvel */}
+      {quote.chapters.length > 0 && (
+        <button
+          type="button"
+          onClick={() => handleAddItem(quote.chapters.length - 1)}
+          aria-label="Adicionar artigo ao último capítulo"
+          className="md:hidden fixed right-4 bottom-[9.5rem] z-40 w-14 h-14 rounded-full bg-gray-900 text-white flex items-center justify-center shadow-xl active:bg-black transition-colors"
+        >
+          <Plus className="w-6 h-6" />
+        </button>
+      )}
 
-      {/* 3. Barra Fixa Inferior de Rentabilidade (Sticky Footer) */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-gray-200 px-8 py-3.5 z-40 shadow-xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="flex items-center gap-6">
-          {/* Marca que estes números são internos e não saem na proposta */}
-          <div
-            className="flex items-center gap-1.5 text-[10px] font-bold text-gray-400 uppercase tracking-wider"
-            title="Custo, margem e lucro são valores internos — não aparecem no PDF enviado ao cliente"
+      {/* 3. Barra Fixa Inferior de Rentabilidade */}
+      {/* No telemóvel assenta por cima dos separadores (bottom-14) e abre ao tocar.
+          No computador fica colada ao fundo, como sempre esteve. */}
+      <div className="fixed bottom-14 md:bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-gray-200 z-40 shadow-xl">
+        {/* Telemóvel — linha fechada */}
+        <div className="md:hidden">
+          <button
+            type="button"
+            onClick={() => setRentabilidadeAberta(v => !v)}
+            aria-expanded={rentabilidadeAberta}
+            className="w-full flex items-center justify-between gap-3 px-4 py-2.5 text-left"
           >
-            <Lock className="w-3 h-3" />
-            Interno
-          </div>
-
-          <div className="h-7 w-px bg-gray-200" />
-
-          <div>
-            <span className="block text-[10px] uppercase font-bold text-gray-400 tracking-wider">
-              Custo Estimado
+            {hideInternal ? (
+              <span className="text-xs font-semibold text-gray-500">
+                Total do orçamento
+              </span>
+            ) : (
+              <span className="flex items-center gap-1.5 text-[10px] font-bold text-gray-400 uppercase tracking-wider">
+                <Lock className="w-3 h-3" />
+                Interno
+                {rentabilidadeAberta ? (
+                  <ChevronDown className="w-3.5 h-3.5" />
+                ) : (
+                  <ChevronUp className="w-3.5 h-3.5" />
+                )}
+              </span>
+            )}
+            <span className="flex items-baseline gap-2">
+              <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">
+                c/ IVA
+              </span>
+              <span className="font-mono text-[15px] font-extrabold text-gray-900 num-tabular">
+                {formatCurrency(totalWithVat)}
+              </span>
             </span>
-            <span className="font-mono text-base font-bold text-gray-700">
-              {formatCurrency(totalCost)}
-            </span>
-          </div>
+          </button>
 
-          <div className="h-7 w-px bg-gray-200" />
-
-          <div>
-            <span className="block text-[10px] uppercase font-bold text-gray-400 tracking-wider">
-              Margem Média
-            </span>
-            <span className="font-mono text-base font-bold text-blue-600">
-              {overallMargin}%
-            </span>
-          </div>
-
-          <div className="h-7 w-px bg-gray-200" />
-
-          <div>
-            <span className="block text-[10px] uppercase font-bold text-gray-400 tracking-wider">
-              Lucro Bruto Previsto
-            </span>
-            <span className="font-mono text-base font-bold text-emerald-600">
-              {formatCurrency(grossProfit)}
-            </span>
-          </div>
+          {rentabilidadeAberta && (
+            <div className="px-4 pb-3 space-y-3 border-t border-gray-100 pt-3">
+              {!hideInternal && (
+                <div className="grid grid-cols-3 gap-3">
+                  <div>
+                    <span className="block text-[10px] uppercase font-bold text-gray-400 tracking-wider">
+                      Custo
+                    </span>
+                    <span className="font-mono text-sm font-bold text-gray-700 num-tabular">
+                      {formatCurrency(totalCost)}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="block text-[10px] uppercase font-bold text-gray-400 tracking-wider">
+                      Margem
+                    </span>
+                    <span className="font-mono text-sm font-bold text-blue-600 num-tabular">
+                      {overallMargin}%
+                    </span>
+                  </div>
+                  <div>
+                    <span className="block text-[10px] uppercase font-bold text-gray-400 tracking-wider">
+                      Lucro
+                    </span>
+                    <span className="font-mono text-sm font-bold text-emerald-600 num-tabular">
+                      {formatCurrency(grossProfit)}
+                    </span>
+                  </div>
+                </div>
+              )}
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] uppercase font-bold text-gray-400 tracking-wider">
+                  Subtotal sem IVA
+                </span>
+                <span className="font-mono text-sm font-bold text-gray-900 num-tabular">
+                  {formatCurrency(subtotal)}
+                </span>
+              </div>
+            </div>
+          )}
         </div>
 
-        <div className="flex items-center gap-6">
-          <div className="text-right">
-            <span className="block text-[10px] uppercase font-bold text-gray-400 tracking-wider">
-              Subtotal Venda
-            </span>
-            <span className="font-mono text-lg font-extrabold text-gray-900">
-              {formatCurrency(subtotal)}
-            </span>
+        {/* Computador — tudo à vista */}
+        <div className="hidden md:flex items-center justify-between gap-4 px-6 lg:px-8 py-3.5">
+          <div className="flex items-center gap-6">
+            {!hideInternal ? (
+              <>
+                {/* Marca que estes números são internos e não saem na proposta */}
+                <div
+                  className="flex items-center gap-1.5 text-[11px] font-bold text-gray-400 uppercase tracking-wider"
+                  title="Custo, margem e lucro são valores internos — não aparecem no PDF enviado ao cliente"
+                >
+                  <Lock className="w-3 h-3" />
+                  Interno
+                </div>
+
+                <div className="h-7 w-px bg-gray-200" />
+
+                <div>
+                  <span className="block text-[11px] uppercase font-bold text-gray-400 tracking-wider">
+                    Custo Estimado
+                  </span>
+                  <span className="font-mono text-lg font-bold text-gray-700 num-tabular">
+                    {formatCurrency(totalCost)}
+                  </span>
+                </div>
+
+                <div className="h-7 w-px bg-gray-200" />
+
+                <div>
+                  <span className="block text-[11px] uppercase font-bold text-gray-400 tracking-wider">
+                    Margem Média
+                  </span>
+                  <span className="font-mono text-lg font-bold text-blue-600 num-tabular">
+                    {overallMargin}%
+                  </span>
+                </div>
+
+                <div className="h-7 w-px bg-gray-200" />
+
+                <div>
+                  <span className="block text-[11px] uppercase font-bold text-gray-400 tracking-wider">
+                    Lucro Bruto Previsto
+                  </span>
+                  <span className="font-mono text-lg font-bold text-emerald-600 num-tabular">
+                    {formatCurrency(grossProfit)}
+                  </span>
+                </div>
+              </>
+            ) : (
+              <div className="flex items-center gap-1.5 text-[11px] font-bold text-gray-400 uppercase tracking-wider">
+                <Lock className="w-3 h-3" />
+                Valores internos escondidos
+              </div>
+            )}
           </div>
 
-          <div className="bg-black text-white px-5 py-2 rounded-xl text-right">
-            <span className="block text-[9px] uppercase font-bold text-gray-400 tracking-wider">
-              Total com IVA (23%)
-            </span>
-            <span className="font-mono text-lg font-black text-emerald-400">
-              {formatCurrency(totalWithVat)}
-            </span>
+          <div className="flex items-center gap-6">
+            <div className="text-right">
+              <span className="block text-[11px] uppercase font-bold text-gray-400 tracking-wider">
+                Subtotal Venda
+              </span>
+              <span className="font-mono text-lg font-extrabold text-gray-900 num-tabular">
+                {formatCurrency(subtotal)}
+              </span>
+            </div>
+
+            <div className="bg-black text-white px-5 py-2 rounded-xl text-right">
+              <span className="block text-[10px] uppercase font-bold text-gray-400 tracking-wider">
+                Total com IVA (23%)
+              </span>
+              <span className="font-mono text-lg font-black text-emerald-400 num-tabular">
+                {formatCurrency(totalWithVat)}
+              </span>
+            </div>
           </div>
         </div>
       </div>

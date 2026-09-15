@@ -33,7 +33,7 @@ import {
 } from '@/lib/quoteBotParser';
 
 export default function QuoteWizard() {
-  const { setCurrentView, createNewQuote } = useApp();
+  const { setCurrentView, createNewQuote, hideInternal } = useApp();
 
   const [templates, setTemplates] = useState<QuoteTemplate[]>([]);
   const [loading, setLoading] = useState(true);
@@ -178,7 +178,7 @@ export default function QuoteWizard() {
   }, [templates]);
 
   return (
-    <div className="p-6 space-y-6 w-full pb-28">
+    <div className="p-4 sm:p-5 lg:p-6 space-y-4 sm:space-y-6 w-full pb-52 md:pb-28">
       {/* Cabeçalho */}
       <div className="flex items-start justify-between gap-4">
         <div className="flex items-start gap-3">
@@ -525,47 +525,49 @@ export default function QuoteWizard() {
 
       {/* Barra fixa com o resumo */}
       {selections.length > 0 && (
-        <div className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-gray-200 px-8 py-3.5 z-40 shadow-xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="flex items-center gap-6">
-            <div>
-              <span className="block text-[10px] uppercase font-bold text-gray-400 tracking-wider">
-                Custo de Produção
-              </span>
-              <span className="font-mono text-base font-bold text-gray-700">
-                {formatCurrency(resumo.custo)}
-              </span>
+        <div className="fixed bottom-14 md:bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-gray-200 px-4 sm:px-6 lg:px-8 py-3 md:py-3.5 z-40 shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-3 md:gap-4">
+          {!hideInternal && (
+            <div className="grid grid-cols-3 md:flex md:items-center gap-3 md:gap-6">
+              <div>
+                <span className="block text-[10px] uppercase font-bold text-gray-400 tracking-wider">
+                  Custo
+                </span>
+                <span className="font-mono text-sm md:text-lg font-bold text-gray-700 num-tabular">
+                  {formatCurrency(resumo.custo)}
+                </span>
+              </div>
+
+              <div className="hidden md:block h-7 w-px bg-gray-200" />
+
+              <div>
+                <span className="block text-[10px] uppercase font-bold text-gray-400 tracking-wider">
+                  Lucro
+                </span>
+                <span className="font-mono text-sm md:text-lg font-bold text-emerald-600 num-tabular">
+                  {formatCurrency(resumo.lucro)}
+                </span>
+              </div>
+
+              <div className="hidden md:block h-7 w-px bg-gray-200" />
+
+              <div>
+                <span className="block text-[10px] uppercase font-bold text-gray-400 tracking-wider">
+                  Markup / Margem
+                </span>
+                <span className="font-mono text-sm md:text-lg font-bold text-blue-600 num-tabular">
+                  {resumo.markup}% <span className="text-gray-400">/</span>{' '}
+                  <span className="text-gray-600">{resumo.margemVenda}%</span>
+                </span>
+              </div>
             </div>
+          )}
 
-            <div className="h-7 w-px bg-gray-200" />
-
-            <div>
-              <span className="block text-[10px] uppercase font-bold text-gray-400 tracking-wider">
-                Lucro Previsto
-              </span>
-              <span className="font-mono text-base font-bold text-emerald-600">
-                {formatCurrency(resumo.lucro)}
-              </span>
-            </div>
-
-            <div className="h-7 w-px bg-gray-200" />
-
-            <div>
-              <span className="block text-[10px] uppercase font-bold text-gray-400 tracking-wider">
-                Markup / Margem
-              </span>
-              <span className="font-mono text-base font-bold text-blue-600">
-                {resumo.markup}% <span className="text-gray-400">/</span>{' '}
-                <span className="text-gray-600">{resumo.margemVenda}%</span>
-              </span>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-4">
-            <div className="text-right">
+          <div className="flex items-center justify-between md:justify-end gap-4">
+            <div className="text-left md:text-right">
               <span className="block text-[10px] uppercase font-bold text-gray-400 tracking-wider">
                 Subtotal Venda
               </span>
-              <span className="font-mono text-lg font-extrabold text-gray-900">
+              <span className="font-mono text-lg font-extrabold text-gray-900 num-tabular">
                 {formatCurrency(resumo.venda)}
               </span>
             </div>
@@ -573,7 +575,7 @@ export default function QuoteWizard() {
             <button
               type="button"
               onClick={handleGenerate}
-              className="inline-flex items-center gap-2 bg-black hover:bg-gray-800 text-white text-xs font-bold px-5 py-2.5 rounded-xl shadow-sm transition"
+              className="inline-flex items-center gap-2 bg-black hover:bg-gray-800 text-white text-xs font-bold px-5 h-11 rounded-xl shadow-sm transition shrink-0"
             >
               <FileCheck className="w-4 h-4" />
               Gerar Orçamento

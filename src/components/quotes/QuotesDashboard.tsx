@@ -40,6 +40,7 @@ export default function QuotesDashboard() {
     totalQuotedAmount,
     totalApprovedAmount,
     averageCostAmount,
+    hideInternal,
   } = useApp();
 
   const [showDropdown, setShowDropdown] = useState(false);
@@ -91,9 +92,9 @@ export default function QuotesDashboard() {
   );
 
   return (
-    <div className="p-6 space-y-6 w-full">
+    <div className="p-4 sm:p-5 lg:p-6 space-y-4 sm:space-y-6 w-full">
       {/* 1. Cartões de KPI no Topo */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         {/* Total Orçado */}
         <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-xs">
           <div className="flex items-center justify-between text-gray-400 mb-1">
@@ -127,21 +128,23 @@ export default function QuotesDashboard() {
           </span>
         </div>
 
-        {/* Custo Médio */}
-        <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-xs">
-          <div className="flex items-center justify-between text-gray-400 mb-1">
-            <span className="text-[11px] font-bold uppercase tracking-wider">
-              Custo Médio Produção
+        {/* Custo Médio — é valor interno, some no modo cliente */}
+        {!hideInternal && (
+          <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-xs">
+            <div className="flex items-center justify-between text-gray-400 mb-1">
+              <span className="text-[11px] font-bold uppercase tracking-wider">
+                Custo Médio Produção
+              </span>
+              <TrendingUp className="w-4 h-4 text-blue-500" />
+            </div>
+            <div className="text-xl font-bold text-gray-900 font-mono num-tabular">
+              {formatCurrency(averageCostAmount)}
+            </div>
+            <span className="text-[11px] text-gray-400 font-medium">
+              Valor interno
             </span>
-            <TrendingUp className="w-4 h-4 text-blue-500" />
           </div>
-          <div className="text-xl font-bold text-gray-900 font-mono">
-            {formatCurrency(averageCostAmount)}
-          </div>
-          <span className="text-[11px] text-gray-400 font-medium">
-            Margem média estimada: ~54%
-          </span>
-        </div>
+        )}
 
         {/* 4. Quarto Cartão: Pendentes */}
         <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-xs">
@@ -161,26 +164,27 @@ export default function QuotesDashboard() {
       </div>
 
       {/* 2. Filtros, Barra de Pesquisa & Botão Novo Orçamento */}
-      <div className="bg-white p-3.5 rounded-xl border border-gray-200 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div className="flex items-center gap-2 flex-1 max-w-md bg-gray-50 border border-gray-200 rounded-lg px-3 py-1.5 text-xs">
+      <div className="bg-white p-3 sm:p-3.5 rounded-xl border border-gray-200 shadow-xs flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+        <div className="flex items-center gap-2 flex-1 lg:max-w-md bg-gray-50 border border-gray-200 rounded-lg px-3 h-10 text-[13px]">
           <Search className="w-4 h-4 text-gray-400 flex-shrink-0" />
           <input
             type="text"
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
             placeholder="Pesquisar por cliente, número ou projeto..."
-            className="bg-transparent w-full outline-none text-gray-700 placeholder-gray-400"
+            className="bg-transparent w-full outline-none text-gray-700 placeholder-gray-400 min-w-0"
           />
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="flex items-center gap-1 bg-gray-100 p-1 rounded-lg">
+        <div className="flex items-center gap-2 min-w-0">
+          {/* Tira deslizante no telemóvel, para os cinco estados caberem */}
+          <div className="flex items-center gap-1 bg-gray-100 p-1 rounded-lg overflow-x-auto scroll-limpo flex-1 lg:flex-none">
             {['Todos', 'Apresentado', 'Adjudicado', 'Rascunho', 'Recusado'].map(st => (
               <button
                 key={st}
                 type="button"
                 onClick={() => setFilterStatus(st)}
-                className={`px-3 py-1 rounded-md text-xs transition-all ${
+                className={`shrink-0 px-3 h-8 rounded-md text-xs transition-all ${
                   filterStatus === st
                     ? 'bg-white font-bold text-gray-900 shadow-xs'
                     : 'text-gray-500 hover:text-gray-900'
@@ -257,15 +261,116 @@ export default function QuotesDashboard() {
 
       {/* 3. Tabela de Orçamentos */}
       <div className="bg-white rounded-xl border border-gray-200 shadow-xs overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs border-collapse">
+        {/* Cartões — só no telemóvel */}
+        <div className="md:hidden divide-y divide-gray-100">
+          {filteredQuotes.length === 0 ? (
+            <div className="py-10 px-4 text-center text-gray-400 space-y-3">
+              <p className="text-sm">Nenhum orçamento encontrado.</p>
+              <button
+                onClick={() => handleCreate('manual')}
+                className="h-11 px-4 text-xs text-white bg-black rounded-lg font-semibold"
+              >
+                Criar orçamento
+              </button>
+            </div>
+          ) : (
+            filteredQuotes.map(q => {
+              const totalVat = calculateQuoteTotalWithVat(q);
+              return (
+                <div key={q.id} className="p-4">
+                  <button
+                    type="button"
+                    onClick={() => editQuote(q)}
+                    className="w-full text-left flex items-start gap-3"
+                  >
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-mono text-[13px] font-bold text-gray-900">
+                          {q.number}
+                        </span>
+                        <span
+                          className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
+                            q.status === 'Adjudicado'
+                              ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                              : q.status === 'Apresentado'
+                              ? 'bg-blue-50 text-blue-700 border-blue-200'
+                              : q.status === 'Recusado'
+                              ? 'bg-red-50 text-red-700 border-red-200'
+                              : 'bg-gray-100 text-gray-600 border-gray-200'
+                          }`}
+                        >
+                          {q.status}
+                        </span>
+                      </div>
+                      <div className="text-[13px] font-semibold text-gray-900 mt-1 truncate">
+                        {q.clientName}
+                      </div>
+                      <div className="text-[11px] text-gray-400 truncate">
+                        {q.projectName || 'Obra Geral'} · {q.date}
+                      </div>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">
+                        c/ IVA
+                      </div>
+                      <div className="font-mono text-sm font-bold text-gray-900 num-tabular">
+                        {formatCurrency(totalVat)}
+                      </div>
+                    </div>
+                  </button>
+
+                  <div className="flex items-center gap-2 mt-3">
+                    <button
+                      type="button"
+                      onClick={() => editQuote(q)}
+                      className="flex-1 h-10 rounded-lg bg-gray-900 text-white text-xs font-semibold flex items-center justify-center gap-1.5"
+                    >
+                      <Pencil className="w-3.5 h-3.5" />
+                      Abrir
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => openPdfPreview(q)}
+                      className="w-11 h-10 rounded-lg border border-gray-200 text-emerald-600 flex items-center justify-center"
+                      title="Ver PDF Oficial"
+                    >
+                      <Printer className="w-4 h-4" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => duplicateQuote(q)}
+                      className="w-11 h-10 rounded-lg border border-gray-200 text-gray-500 flex items-center justify-center"
+                      title="Duplicar"
+                    >
+                      <Copy className="w-4 h-4" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => deleteQuote(q.id)}
+                      className="w-11 h-10 rounded-lg border border-gray-200 text-gray-400 flex items-center justify-center"
+                      title="Eliminar"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
+
+        {/* Tabela — a partir de md */}
+        <div className="hidden md:block overflow-x-auto">
+          <table className="w-full text-left text-[13px] border-collapse num-tabular">
             <thead>
               <tr className="bg-gray-50 border-b border-gray-200 text-gray-400 font-bold text-[10px] uppercase tracking-wider">
                 <th className="py-3 px-4">Nº Orçamento</th>
                 <th className="py-3 px-4">Cliente & Projeto</th>
                 <th className="py-3 px-4">Data</th>
                 <th className="py-3 px-4">Responsável</th>
-                <th className="py-3 px-4 text-right">Custo Est. (€)</th>
+                {!hideInternal && (
+                  <th className="py-3 px-4 text-right">Custo Est. (€)</th>
+                )}
                 <th className="py-3 px-4 text-right">Sub-Total (€)</th>
                 <th className="py-3 px-4 text-right font-bold text-gray-900">
                   Total c/ IVA
@@ -277,7 +382,7 @@ export default function QuotesDashboard() {
             <tbody className="divide-y divide-gray-100">
               {filteredQuotes.length === 0 ? (
                 <tr>
-                  <td colSpan={9} className="py-12 text-center text-gray-400 space-y-2">
+                  <td colSpan={hideInternal ? 8 : 9} className="py-12 text-center text-gray-400 space-y-2">
                     <p className="text-sm">Nenhum orçamento encontrado.</p>
                     <div className="flex justify-center gap-2 pt-2">
                       <button
@@ -336,9 +441,11 @@ export default function QuotesDashboard() {
                       <td className="py-3 px-4 text-gray-600 whitespace-nowrap">
                         {q.responsible}
                       </td>
-                      <td className="py-3 px-4 text-right font-mono text-gray-500 whitespace-nowrap">
-                        {formatCurrency(cost)}
-                      </td>
+                      {!hideInternal && (
+                        <td className="py-3 px-4 text-right font-mono text-gray-500 whitespace-nowrap">
+                          {formatCurrency(cost)}
+                        </td>
+                      )}
                       <td className="py-3 px-4 text-right font-mono text-gray-700 whitespace-nowrap">
                         {formatCurrency(subtotal)}
                       </td>
