@@ -3,6 +3,7 @@
 import React, { useState, useMemo } from 'react';
 import { useApp } from '@/context/AppContext';
 import { Client, Quote } from '@/types';
+import { compararNumeroDesc } from '@/lib/quoteSort';
 import { Users, Plus, MapPin, Mail, Phone, FileText, Check, X, Pencil, Trash2, FileSpreadsheet, ChevronRight, ExternalLink } from 'lucide-react';
 
 export default function ClientsView() {
@@ -127,11 +128,7 @@ export default function ClientsView() {
             {(() => {
               const clientQuotes = quotes
                 .filter(q => q.clientName === c.name)
-                .sort((a, b) => {
-                  const [d1, m1, y1] = a.date.split('/');
-                  const [d2, m2, y2] = b.date.split('/');
-                  return new Date(`${y2}-${m2}-${d2}`).getTime() - new Date(`${y1}-${m1}-${d1}`).getTime();
-                });
+                .sort(compararNumeroDesc);
               
               if (clientQuotes.length === 0) return null;
 
@@ -327,11 +324,7 @@ export default function ClientsView() {
               
               const allQuotes = quotes
                 .filter(q => q.clientName === activeClient.name)
-                .sort((a, b) => {
-                  const [d1, m1, y1] = a.date.split('/');
-                  const [d2, m2, y2] = b.date.split('/');
-                  return new Date(`${y2}-${m2}-${d2}`).getTime() - new Date(`${y1}-${m1}-${d1}`).getTime();
-                });
+                .sort(compararNumeroDesc);
 
               return (
                 <>

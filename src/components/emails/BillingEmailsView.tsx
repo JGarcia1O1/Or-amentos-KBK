@@ -5,6 +5,7 @@ import { Mail, Copy, Check, Info, FileText, Plus, Trash2 , ChevronDown} from 'lu
 import { toast } from 'sonner';
 import { useApp } from '@/context/AppContext';
 import { calculateQuoteTotalWithVat } from '@/lib/calculator';
+import { ordenarPorNumeroDesc } from '@/lib/quoteSort';
 
 interface EmailInvoice {
   id: string;
@@ -373,7 +374,7 @@ export default function BillingEmailsView() {
                   className="w-full border border-blue-200 rounded-lg p-2 text-sm outline-none focus:border-blue-500 bg-white"
                 >
                   <option value="">+ Adicionar Documento do Sistema</option>
-                  {quotes.map(q => (
+                  {ordenarPorNumeroDesc(quotes).map(q => (
                     <option key={q.id} value={q.id}>{q.number} - {q.clientName}</option>
                   ))}
                 </select>

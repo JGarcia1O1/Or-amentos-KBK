@@ -8,6 +8,7 @@ import {
   calculateQuoteTotalWithVat,
   formatCurrency,
 } from '@/lib/calculator';
+import { compararNumeroDesc } from '@/lib/quoteSort';
 import {
   TrendingUp,
   FileText,
@@ -78,12 +79,8 @@ export default function QuotesDashboard() {
 
       return matchQuery && matchStatus;
     })
-    // Do número mais alto para o mais baixo (2026-908 antes de 2026-901).
-    // O 'numeric' compara 908 e 1000 como números, não como texto, por isso
-    // continua certo quando a numeração passar das três casas ou mudar de ano.
-    .sort((a, b) =>
-      (b.number || '').localeCompare(a.number || '', 'pt', { numeric: true })
-    );
+    // Do número mais alto para o mais baixo (2026-908 antes de 2026-901)
+    .sort(compararNumeroDesc);
 
   const approvedCount = quotes.filter(q => q.status === 'Adjudicado').length;
   const successRate = quotes.length
