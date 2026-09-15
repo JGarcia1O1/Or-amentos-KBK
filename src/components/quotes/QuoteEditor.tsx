@@ -62,6 +62,12 @@ export default function QuoteEditor() {
   // Itens expandidos para o painel de fabrico automático
   const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>({});
 
+  // Margem global (em % inteiros) aplicada a todos os artigos do orçamento
+  const [margemGlobal, setMargemGlobal] = useState<number>(() => {
+    const primeiro = selectedQuote?.chapters?.[0]?.items?.[0];
+    return Math.round((primeiro?.marginPercent ?? 0.6) * 100);
+  });
+
   // Estado do Modal da Calculadora Técnica (Aparador / Peça a Peça)
   const [activeItemForCalc, setActiveItemForCalc] = useState<{
     chapterIndex: number;
@@ -99,6 +105,41 @@ export default function QuoteEditor() {
       ...quote,
       [field]: val,
     });
+  };
+
+  // Aplicar a margem global a todos os artigos de todos os capítulos
+  const aplicarMargemGlobal = () => {
+    const percentagem = Number(margemGlobal) || 0;
+    const fracao = percentagem / 100;
+
+    const totalLinhas = quote.chapters.reduce(
+      (acc, ch) => acc + (ch.items?.length || 0),
+      0
+    );
+
+    if (totalLinhas === 0) {
+      toast.error('Não existem artigos para aplicar a margem.');
+      return;
+    }
+
+    confirmAction(
+      'Aplicar Margem Global',
+      `Vai aplicar ${percentagem}% de margem a ${totalLinhas} artigo(s) deste orçamento. As margens definidas linha a linha serão substituídas. Confirma?`,
+      () => {
+        const newChapters = quote.chapters.map(chap => ({
+          ...chap,
+          items: chap.items.map(it => ({
+            ...it,
+            marginPercent: fracao,
+          })),
+        }));
+
+        updateSelectedQuote({ ...quote, chapters: newChapters });
+        toast.success(
+          `Margem de ${percentagem}% aplicada a ${totalLinhas} artigo(s).`
+        );
+      }
+    );
   };
 
   const handleStatusChange = (newStatus: QuoteStatus) => {
@@ -587,6 +628,39 @@ export default function QuoteEditor() {
               </select>
             </div>
 
+            {/* Margem Global — aplica a todos os artigos do orçamento */}
+            <div className="flex items-center gap-2">
+              <label className="text-xs text-gray-400 font-medium">
+                Margem global:
+              </label>
+              <div className="flex items-center bg-gray-50 border border-gray-200 rounded-lg overflow-hidden">
+                <input
+                  type="number"
+                  step="1"
+                  min="0"
+                  value={margemGlobal}
+                  onFocus={e => e.target.select()}
+                  onChange={e => setMargemGlobal(Number(e.target.value))}
+                  onKeyDown={e => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      aplicarMargemGlobal();
+                    }
+                  }}
+                  className="w-14 text-center text-xs font-mono font-bold bg-transparent px-1 py-1 outline-none"
+                />
+                <span className="text-xs text-gray-400 pr-2">%</span>
+                <button
+                  type="button"
+                  onClick={aplicarMargemGlobal}
+                  title="Aplicar esta margem a todos os artigos do orçamento"
+                  className="text-xs font-semibold bg-gray-900 hover:bg-black text-white px-3 py-1 transition"
+                >
+                  Aplicar
+                </button>
+              </div>
+            </div>
+
             <button
               type="button"
               onClick={() => openPdfPreview(quote)}
@@ -1017,21 +1091,25 @@ export default function QuoteEditor() {
 
                           {/* Margem Comercial % */}
                           <td className="py-3 px-3 text-center bg-amber-50/20 align-top">
-                            <input
-                              type="number"
-                              step="0.05"
-                              value={item.marginPercent}
-                              onFocus={e => e.target.select()}
-                              onChange={e =>
-                                handleUpdateItem(
-                                  cIdx,
-                                  iIdx,
-                                  'marginPercent',
-                                  Number(e.target.value)
-                                )
-                              }
-                              className="w-12 text-center font-mono font-bold bg-white border border-gray-200 rounded py-0.5 outline-none"
-                            />
+                            <div className="flex items-center justify-center gap-0.5">
+                              <input
+                                type="number"
+                                step="1"
+                                min="0"
+                                value={Math.round((item.marginPercent || 0) * 100)}
+                                onFocus={e => e.target.select()}
+                                onChange={e =>
+                                  handleUpdateItem(
+                                    cIdx,
+                                    iIdx,
+                                    'marginPercent',
+                                    (Number(e.target.value) || 0) / 100
+                                  )
+                                }
+                                className="w-12 text-center font-mono font-bold bg-white border border-gray-200 rounded py-0.5 outline-none"
+                              />
+                              <span className="text-[10px] text-gray-400 font-semibold">%</span>
+                            </div>
                           </td>
 
                           {/* Extra Fixo (Montagem/Transporte) */}
