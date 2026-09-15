@@ -19,8 +19,18 @@ import {
   Minus,
   Plus,
   FileCheck,
+  MessageSquare,
+  CornerDownLeft,
+  CheckCircle2,
+  HelpCircle,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import {
+  BotDoubt,
+  BotMatch,
+  interpretar,
+  unidadeDivergente,
+} from '@/lib/quoteBotParser';
 
 export default function QuoteWizard() {
   const { setCurrentView, createNewQuote } = useApp();
@@ -48,6 +58,66 @@ export default function QuoteWizard() {
 
   const setQty = (id: string, value: number) => {
     setQuantities(prev => ({ ...prev, [id]: Math.max(0, Number(value) || 0) }));
+  };
+
+  // ============================================================
+  // ASSISTENTE — escreve-se o pedido e ele preenche as quantidades
+  // Interpretador próprio, sem serviços externos (src/lib/quoteBotParser.ts)
+  // ============================================================
+  const [pedido, setPedido] = useState('');
+  const [entendido, setEntendido] = useState<BotMatch[]>([]);
+  const [duvidas, setDuvidas] = useState<BotDoubt[]>([]);
+  const [jaInterpretou, setJaInterpretou] = useState(false);
+
+  const interpretarPedido = () => {
+    if (!pedido.trim()) return;
+
+    const { matches, doubts } = interpretar(pedido, templates);
+    setEntendido(matches);
+    setDuvidas(doubts);
+    setJaInterpretou(true);
+
+    if (matches.length === 0) {
+      toast.error('Não consegui identificar nenhum modelo. Vê as notas abaixo.');
+      return;
+    }
+
+    // Preenche as quantidades: o que o assistente entendeu passa a estar
+    // nos mesmos campos que preencherias à mão, para poderes corrigir.
+    setQuantities(prev => {
+      const next = { ...prev };
+      matches.forEach(m => {
+        const id = m.template.id || '';
+        if (id) next[id] = m.quantity;
+      });
+      return next;
+    });
+
+    const avisos = matches.filter(m => unidadeDivergente(m, pedido)).length;
+    if (avisos > 0) {
+      toast.warning(`${matches.length} linha(s) preenchida(s), mas confirma as unidades.`);
+    } else {
+      toast.success(`${matches.length} linha(s) preenchida(s). Confere antes de gerar.`);
+    }
+  };
+
+  const escolherSugestao = (duvida: BotDoubt, t: QuoteTemplate) => {
+    const id = t.id || '';
+    if (!id) return;
+    if (!duvida.quantidade) {
+      toast.error('Falta a quantidade. Indica-a no campo da receita.');
+    } else {
+      setQty(id, duvida.quantidade);
+      toast.success(`${t.name}: ${duvida.quantidade} ${t.unit}`);
+    }
+    setDuvidas(prev => prev.filter(d => d !== duvida));
+  };
+
+  const limparAssistente = () => {
+    setPedido('');
+    setEntendido([]);
+    setDuvidas([]);
+    setJaInterpretou(false);
   };
 
   const handleGenerate = () => {
@@ -95,6 +165,134 @@ export default function QuoteWizard() {
           </div>
         </div>
       </div>
+
+      {/* ============================================================ */}
+      {/* ASSISTENTE — escreve o pedido em texto corrido                */}
+      {/* ============================================================ */}
+      {!loading && templates.length > 0 && (
+        <div className="bg-white rounded-2xl border border-gray-200 shadow-xs p-5 space-y-3">
+          <div className="flex items-center gap-2">
+            <MessageSquare className="w-4 h-4 text-gray-800" />
+            <h3 className="text-xs font-bold text-gray-900">Descreve o que precisas</h3>
+          </div>
+
+          <textarea
+            id="kubik-bot-pedido"
+            value={pedido}
+            onChange={e => setPedido(e.target.value)}
+            onKeyDown={e => {
+              if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                interpretarPedido();
+              }
+            }}
+            placeholder="Ex: cozinha lacada normal de 5,2 metros e roupeiro branco de correr com 6 m2"
+            className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 outline-none text-xs min-h-[76px] resize-y leading-relaxed focus:border-black transition"
+          />
+
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            <span className="text-[11px] text-gray-400 flex items-center gap-1.5">
+              <CornerDownLeft className="w-3 h-3" />
+              Enter para interpretar · Shift+Enter para mudar de linha
+            </span>
+            <div className="flex items-center gap-2">
+              {jaInterpretou && (
+                <button
+                  type="button"
+                  onClick={limparAssistente}
+                  className="px-3 py-1.5 bg-white border border-gray-200 text-gray-700 rounded-lg hover:bg-gray-50 text-xs font-semibold transition"
+                >
+                  Limpar
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={interpretarPedido}
+                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-black text-white rounded-lg hover:bg-gray-800 text-xs font-semibold transition"
+              >
+                <Wand2 className="w-3.5 h-3.5" />
+                Interpretar
+              </button>
+            </div>
+          </div>
+
+          {/* O que foi entendido */}
+          {entendido.length > 0 && (
+            <div className="space-y-1.5 pt-1">
+              {entendido.map((m, i) => {
+                const divergente = unidadeDivergente(m, pedido);
+                return (
+                  <div
+                    key={i}
+                    className="flex items-start gap-2 text-[11px] bg-gray-50 border border-gray-100 rounded-lg px-3 py-2"
+                  >
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0 mt-0.5" />
+                    <span className="text-gray-700">
+                      <strong className="text-gray-900">
+                        {m.quantity} {m.template.unit}
+                      </strong>{' '}
+                      de {m.template.name}
+                      {divergente && (
+                        <span className="text-amber-700">
+                          {' '}— atenção: esta receita é cobrada por{' '}
+                          {unitLabel(m.template)}, confirma a quantidade.
+                        </span>
+                      )}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Dúvidas */}
+          {duvidas.length > 0 && (
+            <div className="space-y-2 pt-1">
+              {duvidas.map((d, i) => (
+                <div
+                  key={i}
+                  className="bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 space-y-2"
+                >
+                  <div className="flex items-start gap-2 text-[11px] text-amber-900">
+                    <HelpCircle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+                    <span>
+                      {d.motivo === 'sem-quantidade' &&
+                        <>Percebi o modelo em «{d.trecho}» mas falta a quantidade.</>}
+                      {d.motivo === 'sem-modelo' &&
+                        <>Não reconheci nenhum modelo em «{d.trecho}».</>}
+                      {d.motivo === 'ambiguo' &&
+                        <>«{d.trecho}» pode ser mais do que um modelo. Qual queres?</>}
+                    </span>
+                  </div>
+
+                  {d.sugestoes && d.sugestoes.length > 0 && d.motivo === 'ambiguo' && (
+                    <div className="flex flex-wrap gap-1.5 pl-5">
+                      {d.sugestoes.map(s => (
+                        <button
+                          key={s.id}
+                          type="button"
+                          onClick={() => escolherSugestao(d, s)}
+                          className="px-2.5 py-1 bg-white border border-amber-200 text-amber-900 rounded-lg text-[10px] font-semibold hover:bg-amber-100 transition"
+                        >
+                          {s.name}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+
+          {jaInterpretou && (
+            <p className="text-[11px] text-gray-400 leading-relaxed pt-1">
+              As quantidades foram lançadas nos campos abaixo. Confere e corrige
+              o que for preciso antes de gerar — nada é gravado até carregares em
+              Gerar Orçamento.
+            </p>
+          )}
+        </div>
+      )}
 
       {loading && (
         <div className="flex items-center gap-2 text-xs text-gray-400 py-10">
