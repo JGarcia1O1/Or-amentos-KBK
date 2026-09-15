@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import Image from 'next/image';
 import { useApp } from '@/context/AppContext';
 import { ClipboardList,
   Hammer, 
@@ -8,16 +9,18 @@ import { ClipboardList,
   Users,
   Layers,
   Sliders,
-  Factory,
-  Package,
-  Receipt,
-  UserCheck, Settings, LogOut, Mail,
+  Settings, LogOut, Mail,
  } from 'lucide-react';
 
 import { ModuleKey } from '@/types';
 import ProfileSettingsModal from './ProfileSettingsModal';
 
-export default function Sidebar() {
+interface SidebarProps {
+  /** Quando a barra está em gaveta, fecha-a depois de navegar */
+  onNavigate?: () => void;
+}
+
+export default function Sidebar({ onNavigate }: SidebarProps = {}) {
   const [showProfile, setShowProfile] = useState(false);
   const {
     currentView,
@@ -38,21 +41,26 @@ export default function Sidebar() {
   // Etiqueta para os módulos em que o utilizador só pode consultar
   const viewTag = (m: ModuleKey) =>
     permissions[m] === 'view' ? (
-      <span className="text-[9px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded font-semibold shrink-0 ml-2">
+      <span className="text-[10px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded font-semibold shrink-0 ml-2">
         só ver
       </span>
     ) : null;
 
   return (
-    <aside className="w-64 bg-white border-r border-gray-200 flex flex-col justify-between flex-shrink-0 select-none z-20 h-screen">
-      {/* Topo da Sidebar */}
-      <div>
+    <aside className="w-72 lg:w-64 bg-white border-r border-gray-200 flex flex-col justify-between flex-shrink-0 select-none z-20 h-full overflow-hidden">
+      {/* Topo da Sidebar — rola sozinho em ecrãs baixos */}
+      <div className="flex-1 overflow-y-auto overscroll-contain">
         {/* Seletor de Organização / Empresa */}
         <div className="p-4 border-b border-gray-100">
           <div className="flex items-center gap-3 p-2 rounded-xl bg-gray-50 border border-gray-100">
-            <div className="w-9 h-9 rounded-lg bg-black text-white flex items-center justify-center font-bold text-base shadow-sm">
-              K
-            </div>
+            <Image
+              src="/kubik-icon.png"
+              alt="KUBIK HOME"
+              width={256}
+              height={256}
+              priority
+              className="w-9 h-9 shrink-0"
+            />
             <div className="flex-1 min-w-0">
               <h2 className="text-xs font-bold text-gray-900 uppercase tracking-wider truncate">
                 KUBIK HOME
@@ -66,7 +74,13 @@ export default function Sidebar() {
         </div>
 
         {/* Navegação de Módulos */}
-        <nav className="p-3 space-y-1">
+        <nav
+          className="p-3 space-y-1"
+          onClick={e => {
+            // Qualquer clique num botao de modulo fecha a gaveta no telemovel
+            if ((e.target as HTMLElement).closest('button')) onNavigate?.();
+          }}
+        >
           <div className="px-3 py-1.5 text-[10px] font-bold text-gray-400 uppercase tracking-wider">
             Módulos Ativos
           </div>
@@ -75,7 +89,7 @@ export default function Sidebar() {
           <button
             type="button"
             onClick={() => setCurrentView('dashboard')}
-            className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs transition-colors ${
+            className={`w-full flex items-center justify-between gap-2 px-3 h-11 lg:h-9 rounded-lg text-[13px] transition-colors ${
               currentView === 'dashboard'
                 ? 'bg-gray-900 text-white font-medium shadow-sm'
                 : 'text-gray-600 hover:bg-gray-100'
@@ -93,7 +107,7 @@ export default function Sidebar() {
           <button
             type="button"
             onClick={() => setCurrentView('obras')}
-            className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs transition-colors ${
+            className={`w-full flex items-center justify-between gap-2 px-3 h-11 lg:h-9 rounded-lg text-[13px] transition-colors ${
               currentView === 'obras'
                 ? 'bg-gray-900 text-white font-medium shadow-sm'
                 : 'text-gray-600 hover:bg-gray-100'
@@ -115,7 +129,7 @@ export default function Sidebar() {
               setCurrentView('quotes-list');
               setSelectedQuote(null);
             }}
-            className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs transition-colors ${
+            className={`w-full flex items-center justify-between gap-2 px-3 h-11 lg:h-9 rounded-lg text-[13px] transition-colors ${
               currentView.startsWith('quote')
                 ? 'bg-gray-900 text-white font-medium shadow-sm'
                 : 'text-gray-600 hover:bg-gray-100'
@@ -148,7 +162,7 @@ export default function Sidebar() {
                 onClick={() => {
                   setCurrentView('visits-list');
                 }}
-                className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs transition-colors ${
+                className={`w-full flex items-center justify-between gap-2 px-3 h-11 lg:h-9 rounded-lg text-[13px] transition-colors ${
                   currentView.startsWith('visit')
                     ? 'bg-gray-900 text-white font-medium shadow-sm'
                     : 'text-gray-600 hover:bg-gray-100'
@@ -166,7 +180,7 @@ export default function Sidebar() {
               <button
                 type="button"
                 onClick={() => setCurrentView('clients')}
-              className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs transition-colors ${
+              className={`w-full flex items-center justify-between gap-2 px-3 h-11 lg:h-9 rounded-lg text-[13px] transition-colors ${
                 currentView === 'clients'
                   ? 'bg-gray-900 text-white font-medium shadow-sm'
                   : 'text-gray-600 hover:bg-gray-100'
@@ -191,7 +205,7 @@ export default function Sidebar() {
             <button
               type="button"
               onClick={() => setCurrentView('materials')}
-              className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs transition-colors ${
+              className={`w-full flex items-center justify-between gap-2 px-3 h-11 lg:h-9 rounded-lg text-[13px] transition-colors ${
                 currentView === 'materials'
                   ? 'bg-gray-900 text-white font-medium shadow-sm'
                   : 'text-gray-600 hover:bg-gray-100'
@@ -217,7 +231,7 @@ export default function Sidebar() {
             <button
               type="button"
               onClick={() => setCurrentView('emails')}
-              className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs transition-colors ${
+              className={`w-full flex items-center justify-between gap-2 px-3 h-11 lg:h-9 rounded-lg text-[13px] transition-colors ${
                 currentView === 'emails'
                   ? 'bg-gray-900 text-white font-medium shadow-sm'
                   : 'text-gray-600 hover:bg-gray-100'
@@ -236,7 +250,7 @@ export default function Sidebar() {
             <button
               type="button"
               onClick={() => setCurrentView('settings')}
-              className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs transition-colors ${
+              className={`w-full flex items-center gap-2.5 px-3 h-11 lg:h-9 rounded-lg text-[13px] transition-colors ${
                 currentView === 'settings'
                   ? 'bg-gray-900 text-white font-medium shadow-sm'
                   : 'text-gray-600 hover:bg-gray-100'
@@ -257,40 +271,12 @@ export default function Sidebar() {
           )}
 
           {/* Módulos Futuros (Arquitetura Modular Pluggable) */}
-          <div className="pt-4 px-3 py-1.5 text-[10px] font-bold text-gray-400 uppercase tracking-wider flex items-center justify-between">
-            <span>Próximos Módulos</span>
-            <span className="text-[9px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded font-semibold">
-              Modular
-            </span>
-          </div>
-
-          <div className="opacity-50 space-y-0.5">
-            <div className="w-full flex items-center justify-between px-3 py-1.5 rounded-lg text-xs text-gray-400 cursor-not-allowed">
-              <div className="flex items-center gap-2.5">
-                <Factory className="w-4 h-4" />
-                <span>Produção & Obras</span>
-              </div>
-              <span className="text-[9px] bg-gray-100 text-gray-400 px-1.5 py-0.5 rounded">
-                Em Breve
-              </span>
+          <div className="mt-4 pt-3 border-t border-gray-100 px-3">
+            <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">
+              Em breve
             </div>
-            <div className="w-full flex items-center justify-between px-3 py-1.5 rounded-lg text-xs text-gray-400 cursor-not-allowed">
-              <div className="flex items-center gap-2.5">
-                <Package className="w-4 h-4" />
-                <span>Stock & Encomendas</span>
-              </div>
-              <span className="text-[9px] bg-gray-100 text-gray-400 px-1.5 py-0.5 rounded">
-                Em Breve
-              </span>
-            </div>
-            <div className="w-full flex items-center justify-between px-3 py-1.5 rounded-lg text-xs text-gray-400 cursor-not-allowed">
-              <div className="flex items-center gap-2.5">
-                <Receipt className="w-4 h-4" />
-                <span>Faturação</span>
-              </div>
-              <span className="text-[9px] bg-gray-100 text-gray-400 px-1.5 py-0.5 rounded">
-                Em Breve
-              </span>
+            <div className="mt-1 text-[11px] text-gray-400 leading-relaxed">
+              Produção &middot; Stock &middot; Faturação
             </div>
           </div>
         </nav>

@@ -62,6 +62,13 @@ interface AppContextType {
   can: (module: ModuleKey, required?: PermissionLevel) => boolean;
   refreshUserProfile: () => Promise<void>;
 
+  // Apresentação — esconder custos, margens e lucro do ecrã.
+  // É conveniência para mostrar um orçamento ao cliente, NÃO é segurança:
+  // quem não pode ver custos continua a ser travado pelas permissões.
+  hideInternal: boolean;
+  setHideInternal: (value: boolean) => void;
+  toggleHideInternal: () => void;
+
   // Aprovações (RBAC)
   pendingApprovals: PendingApproval[];
   setPendingApprovals: React.Dispatch<React.SetStateAction<PendingApproval[]>>;
@@ -162,6 +169,43 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [currentView, setCurrentView] = useState<'dashboard' | 'obras' | 'visits-list' | 'visit-editor' | 'quotes-list' | 'quote-editor' | 'quote-wizard' | 'clients' | 'materials' | 'settings' | 'emails'>('quotes-list');
   const [currentUser, setCurrentUser] = useState<string>('A Carregar...');
   const [userRole, setUserRole] = useState<UserRole>('trabalhador');
+
+  // ============================================================
+  // MODO CLIENTE — esconde custo, margem, extra e lucro do ecrã.
+  // Guardado no aparelho, por isso mantém-se entre sessões.
+  // Não altera dados nem cálculos: é só apresentação.
+  // ============================================================
+  const [hideInternal, setHideInternalState] = useState(false);
+
+  useEffect(() => {
+    try {
+      const guardado = window.localStorage.getItem('kubik:hideInternal');
+      if (guardado === '1') setHideInternalState(true);
+    } catch {
+      // localStorage indisponível (janela privada, por exemplo) — segue com o valor por defeito
+    }
+  }, []);
+
+  const setHideInternal = React.useCallback((value: boolean) => {
+    setHideInternalState(value);
+    try {
+      window.localStorage.setItem('kubik:hideInternal', value ? '1' : '0');
+    } catch {
+      // sem persistência, mas o ecrã reage na mesma
+    }
+  }, []);
+
+  const toggleHideInternal = React.useCallback(() => {
+    setHideInternalState(prev => {
+      const proximo = !prev;
+      try {
+        window.localStorage.setItem('kubik:hideInternal', proximo ? '1' : '0');
+      } catch {
+        // idem
+      }
+      return proximo;
+    });
+  }, []);
 
   // ============================================================
   // PERMISSÕES POR MÓDULO
@@ -1151,6 +1195,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         isAdmin,
         can,
         refreshUserProfile,
+        hideInternal,
+        setHideInternal,
+        toggleHideInternal,
         pendingApprovals,
         setPendingApprovals,
         approvePending,

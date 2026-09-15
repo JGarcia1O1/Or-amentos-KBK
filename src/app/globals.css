@@ -17,6 +17,59 @@ body {
 }
 
 /* ============================================================ */
+/* FUNDAÇÕES DE ECRÃ                                            */
+/* Regras de base para a aplicação funcionar do telemóvel ao 4K */
+/* ============================================================ */
+
+/* Impede o zoom automático do iOS ao tocar num campo: o Safari só
+   deixa o tamanho em paz a partir de 16px. Aplica-se apenas ao toque. */
+@media (max-width: 767px) {
+  input,
+  select,
+  textarea {
+    font-size: 16px;
+  }
+}
+
+/* Margem de segurança do entalhe e da barra inferior do telemóvel.
+   Em ecrãs sem entalhe o valor é zero e nada muda. */
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+.pt-safe {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
+/* Números de dinheiro e percentagens alinhados na vertical */
+.num-tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Esconde a barra de scroll das tiras deslizantes (capítulos, separadores)
+   sem lhes tirar o scroll. */
+.scroll-limpo {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scroll-limpo::-webkit-scrollbar {
+  display: none;
+}
+
+/* Alvo mínimo de toque. Usado nos controlos que também se usam em obra. */
+@media (pointer: coarse) {
+  .toque {
+    min-height: 44px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ============================================================ */
 /* ESTILOS DE IMPRESSÃO VETORIAL DO PDF OFICIAL                */
 /* ============================================================ */
 @media print {
