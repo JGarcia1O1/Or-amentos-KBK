@@ -993,6 +993,33 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     };
   }, [debouncedSaveQuote]);
 
+  // ============================================================
+  // NUMERAÇÃO DOS ORÇAMENTOS
+  // Formato: ANO-MÊS + sequência de 2 dígitos. Exemplo: 2026-908
+  // é o oitavo orçamento de setembro de 2026.
+  // A sequência recomeça em cada mês e nunca reaproveita um número:
+  // parte do maior que já existe nesse mês, não da contagem de linhas.
+  // ============================================================
+  const proximoNumeroOrcamento = (): string => {
+    const agora = new Date();
+    const ano = agora.getFullYear();
+    const mes = agora.getMonth() + 1;
+    const prefixo = `${ano}-${mes}`;
+
+    let maiorSeq = 0;
+    quotes.forEach(q => {
+      if (q.number && q.number.startsWith(prefixo)) {
+        const sufixo = q.number.slice(prefixo.length);
+        if (/^\d+$/.test(sufixo)) {
+          const seq = parseInt(sufixo, 10);
+          if (!isNaN(seq) && seq > maiorSeq) maiorSeq = seq;
+        }
+      }
+    });
+
+    return `${prefixo}${String(maiorSeq + 1).padStart(2, '0')}`;
+  };
+
   // Ações de Orçamentos
   // customChapters: usado pelo Configurador, que já traz os capítulos e
   // artigos montados a partir das receitas. Sem isso, mantém-se o
@@ -1001,26 +1028,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     type: 'manual' | 'automatic' = 'manual',
     customChapters?: QuoteChapter[]
   ): Quote => {
-    const now = new Date();
-    const y = now.getFullYear();
-    const m = now.getMonth() + 1;
-    
-    // Contagem sequencial do MAs
-    let maxSeq = 0;
-    quotes.forEach(q => {
-      if (q.number && q.number.startsWith(`${y}-${m}`)) {
-        const rightPart = q.number.replace(`${y}-${m}`, '');
-        if (/^\d+$/.test(rightPart)) {
-          const seqInt = parseInt(rightPart, 10);
-          if (!isNaN(seqInt) && seqInt > maxSeq) {
-            maxSeq = seqInt;
-          }
-        }
-      }
-    });
-    
-    const seqStr = String(maxSeq + 1).padStart(2, '0');
-    const nextNum = `${y}-${m}${seqStr}`;
+    const nextNum = proximoNumeroOrcamento();
 
     const defaultClient = clients[0] || {
       name: 'Cliente Exemplo',
@@ -1120,8 +1128,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   };
 
   const duplicateQuote = (quote: Quote) => {
-    const nextId = quotes.length + 1;
-    const nextNum = `2026-${String(nextId).padStart(3, '0')}`;
+    // Usa a mesma numeração dos orçamentos novos. Antes usava o número de
+    // linhas da lista, o que gerava números fora do formato e repetidos.
+    const nextNum = proximoNumeroOrcamento();
     const duplicated: Quote = {
       ...JSON.parse(JSON.stringify(quote)),
       id: `q-${Date.now()}`,

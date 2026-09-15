@@ -64,19 +64,26 @@ export default function QuotesDashboard() {
     createNewQuote(type);
   };
 
-  // Filtragem
-  const filteredQuotes = quotes.filter(q => {
-    const matchQuery =
-      q.clientName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      q.number.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (q.projectName &&
-        q.projectName.toLowerCase().includes(searchQuery.toLowerCase()));
+  // Filtragem e ordenação
+  const filteredQuotes = quotes
+    .filter(q => {
+      const matchQuery =
+        q.clientName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        q.number.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (q.projectName &&
+          q.projectName.toLowerCase().includes(searchQuery.toLowerCase()));
 
-    const matchStatus =
-      filterStatus === 'Todos' || q.status === filterStatus;
+      const matchStatus =
+        filterStatus === 'Todos' || q.status === filterStatus;
 
-    return matchQuery && matchStatus;
-  });
+      return matchQuery && matchStatus;
+    })
+    // Do número mais alto para o mais baixo (2026-908 antes de 2026-901).
+    // O 'numeric' compara 908 e 1000 como números, não como texto, por isso
+    // continua certo quando a numeração passar das três casas ou mudar de ano.
+    .sort((a, b) =>
+      (b.number || '').localeCompare(a.number || '', 'pt', { numeric: true })
+    );
 
   const approvedCount = quotes.filter(q => q.status === 'Adjudicado').length;
   const successRate = quotes.length
