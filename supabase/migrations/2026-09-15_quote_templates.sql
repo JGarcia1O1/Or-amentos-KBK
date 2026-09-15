@@ -81,16 +81,19 @@ CREATE POLICY "kubik_quote_templates_delete"
 -- =====================================================================
 
 INSERT INTO public.quote_templates
-  (name, category, unit, unit_label, designation, cost_per_unit, margin_percent, fixed_extra, source, is_confirmed, sort_order)
+  (name, category, unit, unit_label, designation, cost_per_unit, margin_percent, fixed_extra, source, is_confirmed, sort_order, notes)
 VALUES
-  ('Cozinha Branco brilho',        'Cozinhas',  'm',  'metro linear',  'Cozinha em branco brilho, por medida',              101.37, 0.60, 350, 'Excel Calculo de custo (2026)', true, 10),
-  ('Cozinha Antidedada',           'Cozinhas',  'm',  'metro linear',  'Cozinha em acabamento antidedada, por medida',      130.59, 0.60, 350, 'Excel Calculo de custo (2026)', true, 20),
-  ('Cozinha Lacada Normal',        'Cozinhas',  'm',  'metro linear',  'Cozinha lacada, por medida',                        174.02, 0.60, 350, 'Excel Calculo de custo (2026)', true, 30),
-  ('Cozinha Lacada Almofadada',    'Cozinhas',  'm',  'metro linear',  'Cozinha lacada com portas almofadadas, por medida', 202.34, 0.60, 350, 'Excel Calculo de custo (2026)', true, 40),
-  ('Roupeiro Branco MA — portas de abrir',        'Roupeiros', 'm2', 'metro quadrado', 'Roupeiro em branco MA com portas de abrir',          102.54, 0.60, 350, 'Excel Calculo de custo (2026)', true, 50),
-  ('Roupeiro Lacado RAL 9010 — portas de abrir',  'Roupeiros', 'm2', 'metro quadrado', 'Roupeiro lacado RAL 9010 com portas de abrir',       150.54, 0.60, 350, 'Excel Calculo de custo (2026)', true, 60),
-  ('Roupeiro Lacado RAL 9010 — portas de correr', 'Roupeiros', 'm2', 'metro quadrado', 'Roupeiro lacado RAL 9010 com portas de correr',      174.43, 0.60, 350, 'Excel Calculo de custo (2026)', true, 70),
-  ('Roupeiro Branco MA — portas de correr',       'Roupeiros', 'm2', 'metro quadrado', 'Roupeiro em branco MA com portas de correr',         174.61, 0.60, 350, 'Excel Calculo de custo (2026)', true, 80)
+  ('Cozinha Branco brilho',        'Cozinhas',  'm',  'metro linear',  'Cozinha em branco brilho, por medida',              169.25, 0.60, 350, 'Excel Cozinha (2) — 15/09/2026',  true, 10, NULL),
+  ('Cozinha Antidedada',           'Cozinhas',  'm',  'metro linear',  'Cozinha em acabamento antidedada, por medida',      197.31, 0.60, 350, 'Excel Cozinha (2) — 15/09/2026',  true, 20, NULL),
+  ('Cozinha Lacada Normal',        'Cozinhas',  'm',  'metro linear',  'Cozinha lacada, por medida',                        269.07, 0.60, 350, 'Excel Cozinha (2) — 15/09/2026',  true, 30, NULL),
+  ('Cozinha Lacada Almofadada',    'Cozinhas',  'm',  'metro linear',  'Cozinha lacada com portas almofadadas, por medida', 312.07, 0.60, 350, 'Excel Cozinha (2) — 15/09/2026',  true, 40, NULL),
+  ('Roupeiro Branco MA — portas de abrir',        'Roupeiros', 'm2', 'metro quadrado', 'Roupeiro em branco MA com portas de abrir',     146.73, 0.60, 350, 'Excel Roupeiro (2) — 15/09/2026', true,  50, NULL),
+  ('Roupeiro Lacado RAL 9010 — portas de abrir',  'Roupeiros', 'm2', 'metro quadrado', 'Roupeiro lacado RAL 9010 com portas de abrir',  207.79, 0.60, 350, 'Excel Roupeiro (2) — 15/09/2026', true,  60, NULL),
+  ('Roupeiro Lacado RAL 9010 — portas de correr', 'Roupeiros', 'm2', 'metro quadrado', 'Roupeiro lacado RAL 9010 com portas de correr', 232.53, 0.60, 350, 'Excel Roupeiro (2) — 15/09/2026', true,  70, NULL),
+  -- Por confirmar: a célula da folha diz 384,70 EUR para 3 m2 (128,23/m2),
+  -- mas a lista de materiais colada ao lado totaliza 523,84 EUR (174,61/m2).
+  -- É também o único modelo que desceu de preço. Aparece a âmbar no configurador.
+  ('Roupeiro Branco MA — portas de correr',       'Roupeiros', 'm2', 'metro quadrado', 'Roupeiro em branco MA com portas de correr',    128.23, 0.60, 350, 'Excel Roupeiro (2) — 15/09/2026 (célula 384,70; imagem diz 523,84 — por esclarecer)', false, 80, 'Discrepância entre a célula e a lista de materiais do Excel. Confirmar com a produção.')
 ON CONFLICT DO NOTHING;
 
 -- Verificação:
