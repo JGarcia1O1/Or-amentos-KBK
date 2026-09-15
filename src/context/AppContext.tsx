@@ -46,8 +46,8 @@ import {
 
 interface AppContextType {
   // Navegação e Utilizador
-  currentView: 'dashboard' | 'obras' | 'visits-list' | 'visit-editor' | 'quotes-list' | 'quote-editor' | 'clients' | 'materials' | 'settings' | 'emails';
-  setCurrentView: (view: 'dashboard' | 'obras' | 'visits-list' | 'visit-editor' | 'quotes-list' | 'quote-editor' | 'clients' | 'materials' | 'settings' | 'emails') => void;
+  currentView: 'dashboard' | 'obras' | 'visits-list' | 'visit-editor' | 'quotes-list' | 'quote-editor' | 'quote-wizard' | 'clients' | 'materials' | 'settings' | 'emails';
+  setCurrentView: (view: 'dashboard' | 'obras' | 'visits-list' | 'visit-editor' | 'quotes-list' | 'quote-editor' | 'quote-wizard' | 'clients' | 'materials' | 'settings' | 'emails') => void;
   currentUser: string;
   setCurrentUser: (user: string) => void;
   userRole: UserRole;
@@ -113,7 +113,7 @@ interface AppContextType {
   setQuotes: React.Dispatch<React.SetStateAction<Quote[]>>;
   selectedQuote: Quote | null;
   setSelectedQuote: (quote: Quote | null) => void;
-  createNewQuote: (type?: 'manual' | 'automatic') => Quote;
+  createNewQuote: (type?: 'manual' | 'automatic', customChapters?: QuoteChapter[]) => Quote;
   editQuote: (quote: Quote) => void;
   updateSelectedQuote: (quote: Quote) => void;
   duplicateQuote: (quote: Quote) => void;
@@ -159,7 +159,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setIsMounted(true);
   }, []);
 
-  const [currentView, setCurrentView] = useState<'dashboard' | 'obras' | 'visits-list' | 'visit-editor' | 'quotes-list' | 'quote-editor' | 'clients' | 'materials' | 'settings' | 'emails'>('quotes-list');
+  const [currentView, setCurrentView] = useState<'dashboard' | 'obras' | 'visits-list' | 'visit-editor' | 'quotes-list' | 'quote-editor' | 'quote-wizard' | 'clients' | 'materials' | 'settings' | 'emails'>('quotes-list');
   const [currentUser, setCurrentUser] = useState<string>('A Carregar...');
   const [userRole, setUserRole] = useState<UserRole>('trabalhador');
 
@@ -950,7 +950,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   }, [debouncedSaveQuote]);
 
   // Ações de Orçamentos
-  const createNewQuote = (type: 'manual' | 'automatic' = 'manual'): Quote => {
+  // customChapters: usado pelo Configurador, que já traz os capítulos e
+  // artigos montados a partir das receitas. Sem isso, mantém-se o
+  // comportamento de sempre (capítulos vazios e um artigo de exemplo).
+  const createNewQuote = (
+    type: 'manual' | 'automatic' = 'manual',
+    customChapters?: QuoteChapter[]
+  ): Quote => {
     const now = new Date();
     const y = now.getFullYear();
     const m = now.getMonth() + 1;
@@ -1027,10 +1033,14 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       clientAddress: defaultClient.address,
       date: new Date().toLocaleDateString('pt-PT'),
       responsible: currentUser,
-      projectName: type === 'automatic' ? 'Projeto Automático' : 'Projeto Manual',
+      projectName: customChapters
+        ? 'Projeto do Configurador'
+        : type === 'automatic'
+        ? 'Projeto Automático'
+        : 'Projeto Manual',
       status: 'Rascunho',
       type: type,
-      chapters: [
+      chapters: customChapters && customChapters.length > 0 ? customChapters : [
         { id: 1, title: 'Mobiliário Cozinha',    items: [initialItem] },
         { id: 2, title: 'Roupeiros',              items: [] },
         { id: 3, title: 'Mobiliário WC',          items: [] },

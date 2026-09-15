@@ -11,6 +11,7 @@ import {
   Sparkles,
   UserCircle2,
   LogOut,
+  Wand2,
 } from 'lucide-react';
 import { UserRole } from '@/types';
 
@@ -139,6 +140,27 @@ export default function Header() {
                     </div>
                     <div className="text-[11px] text-gray-500 leading-tight mt-0.5">
                       Cálculo automático a partir de chapas, tempos de máquina (CNC/SH) e ferragens.
+                    </div>
+                  </div>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowDropdown(false);
+                    setCurrentView('quote-wizard');
+                  }}
+                  className="w-full text-left px-3.5 py-2.5 hover:bg-gray-50 flex items-start gap-2.5 transition border-t border-gray-50"
+                >
+                  <div className="w-7 h-7 rounded-lg bg-gray-900 text-white flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <Wand2 className="w-3.5 h-3.5" />
+                  </div>
+                  <div>
+                    <div className="text-xs font-bold text-gray-900">
+                      Orçamento com Configurador
+                    </div>
+                    <div className="text-[11px] text-gray-500 leading-tight mt-0.5">
+                      Indica os metros de cozinha ou de roupeiro e o orçamento monta-se sozinho.
                     </div>
                   </div>
                 </button>

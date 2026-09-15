@@ -151,6 +151,40 @@ export interface AutomaticItemConfig {
   hardware: AutomaticItemHardware[];
 }
 
+/* ==========================================================
+   CONFIGURADOR DE ORÇAMENTOS (Receitas)
+   Uma receita é um tipo de mobiliário com custo conhecido por
+   unidade — metro linear de cozinha, metro quadrado de roupeiro.
+   ATENÇÃO: marginPercent é MARKUP sobre o custo, coerente com o
+   resto do sistema (ver capítulo 3.4 do KUBIK_HANDOFF.md).
+   ========================================================== */
+
+export interface QuoteTemplate {
+  id?: string;
+  name: string;              // name
+  category: string;          // category — vira título do capítulo
+  unit: string;              // unit: 'm' | 'm2' | 'un'
+  unitLabel?: string;        // unit_label: 'metro linear', 'metro quadrado'
+  designation: string;       // designation — texto do artigo gerado
+  costPerUnit: number;       // cost_per_unit
+  marginPercent: number;     // margin_percent (markup)
+  fixedExtra: number;        // fixed_extra
+  automaticConfig?: AutomaticItemConfig; // automatic_config (fase por módulo)
+  source?: string;           // source — de onde veio o custo
+  isConfirmed: boolean;      // is_confirmed — validado pela produção
+  isActive: boolean;         // is_active
+  sortOrder: number;         // sort_order
+  notes?: string;            // notes
+  createdAt?: string;        // created_at
+  updatedAt?: string;        // updated_at
+}
+
+// Linha escolhida no configurador antes de gerar o orçamento
+export interface TemplateSelection {
+  template: QuoteTemplate;
+  quantity: number;
+}
+
 export interface QuoteItem {
   id: string;
   code: string;
