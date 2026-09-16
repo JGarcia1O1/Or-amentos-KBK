@@ -15,7 +15,10 @@ export default function CrmEmailsView() {
   const [reference, setReference] = useState('');
   const [quoteNum, setQuoteNum] = useState('');
   const [quoteValue, setQuoteValue] = useState('');
-  const [deadline, setDeadline] = useState('30 a 45 dias úteis');
+  // O prazo de execução deixou de ser comprometido por escrito: depende de
+  // fornecedores e da carteira de encomendas, e é confirmado na adjudicação.
+  const PRAZO_SEM_COMPROMISSO =
+    'a confirmar na adjudicação, em função da disponibilidade de materiais e da carteira de encomendas';
   const [conditions, setConditions] = useState('50% adjudicação, 40% montagem, 10% conclusão');
   const [validity, setValidity] = useState('30 dias');
   const [inclusions, setInclusions] = useState('transporte e montagem');
@@ -62,7 +65,7 @@ export default function CrmEmailsView() {
 <p><strong>Resumo da proposta:</strong><br>
 · Âmbito: Fornecimento e montagem de carpintarias<br>
 · Valor total: ${quoteValue || '[Valor]'} € + IVA à taxa legal<br>
-· Prazo de execução: ${deadline || '[Prazo]'} após confirmação e validação de medidas<br>
+· Prazo de execução: ${PRAZO_SEM_COMPROMISSO}<br>
 · Condições de pagamento: ${conditions || '[Condições]'}<br>
 · Validade da proposta: ${validity || '[Validade]'}</p>
 <p>A proposta inclui ${inclusions || '[Inclusões]'} e exclui ${exclusions || '[Exclusões]'}.</p>
@@ -79,14 +82,14 @@ export default function CrmEmailsView() {
       case '4_followup2':
         body = `<p>Exmo(a). Senhor(a) ${cn},</p>
 <p>Voltamos ao contacto a propósito do orçamento n.º ${qn} para ${ref}.</p>
-<p>Sabemos que uma decisão desta natureza exige análise, pelo que ficamos ao dispor para ajustar o âmbito dos trabalhos, apresentar alternativas de materiais ou rever prazos e faseamento da obra.</p>
-<p>Recordamos que a proposta é válida até ${validity || '[Validade]'} e que o prazo de execução depende da carteira de encomendas no momento da confirmação.</p>
+<p>Sabemos que uma decisão desta natureza exige análise, pelo que ficamos ao dispor para ajustar o âmbito dos trabalhos, apresentar alternativas de materiais ou rever o faseamento da obra.</p>
+<p>Recordamos que a proposta é válida até ${validity || '[Validade]'}. O prazo de execução é ${PRAZO_SEM_COMPROMISSO}.</p>
 <p>Agradecemos uma breve indicação sobre o estado da sua decisão.</p>`;
         break;
       case '5_followup3':
         body = `<p>Exmo(a). Senhor(a) ${cn},</p>
 <p>Informamos que a validade do orçamento n.º ${qn}, referente a ${ref}, termina a ${validity || '[Validade]'}.</p>
-<p>Caso mantenha interesse, agradecemos que nos comunique até essa data para garantirmos as condições e o prazo apresentados. Se o projeto tiver sido adiado ou seguido outro caminho, agradecemos igualmente que nos informe — ficamos com o seu contacto para futuras oportunidades.</p>
+<p>Caso mantenha interesse, agradecemos que nos comunique até essa data para garantirmos as condições apresentadas. Se o projeto tiver sido adiado ou seguido outro caminho, agradecemos igualmente que nos informe — ficamos com o seu contacto para futuras oportunidades.</p>
 <p>Obrigado pela confiança e disponibilidade.</p>`;
         break;
       case '6_adjudicada':
@@ -95,7 +98,7 @@ export default function CrmEmailsView() {
 <p><strong>Próximos passos:</strong><br>
 1. Confirmação final de materiais e acabamentos;<br>
 2. Retificação de medidas no local;<br>
-3. Entrada em produção, com prazo de execução de ${deadline || '[Prazo]'};<br>
+3. Entrada em produção, com prazo de execução ${PRAZO_SEM_COMPROMISSO};<br>
 4. Agendamento da montagem com antecedência.</p>
 <p>O seu contacto na KUBIK para esta obra será ${respName || '[Nome]'} (${respPhone} · ${respEmail}).</p>
 <p>Agradecemos a confiança depositada nos nossos serviços.</p>`;
@@ -227,15 +230,6 @@ ${signature}
                     </div>
                   </div>
                   <div>
-                    <label className="block text-xs text-gray-500 font-medium mb-1">Prazo de Execução</label>
-                    <input 
-                      type="text" 
-                      value={deadline}
-                      onChange={(e) => setDeadline(e.target.value)}
-                      className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-500 transition-all"
-                    />
-                  </div>
-                  <div>
                     <label className="block text-xs text-gray-500 font-medium mb-1">Condições</label>
                     <input 
                       type="text" 
@@ -301,17 +295,6 @@ ${signature}
                 </div>
               )}
               
-              {templateType === '6_adjudicada' && (
-                <div>
-                  <label className="block text-xs text-gray-500 font-medium mb-1">Prazo de Execução</label>
-                  <input 
-                    type="text" 
-                    value={deadline}
-                    onChange={(e) => setDeadline(e.target.value)}
-                    className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-500 transition-all"
-                  />
-                </div>
-              )}
             </div>
           </div>
 
