@@ -472,15 +472,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [deletedQuotes, setDeletedQuotes] = useState<Quote[]>([]);
   const [papeleiraCarregando, setPapeleiraCarregando] = useState(false);
 
-  // Todos os números já atribuídos, incluindo os da papeleira. Sem isto,
-  // eliminar o último orçamento do mês faria o seguinte repetir o número.
-  const [numerosUsados, setNumerosUsados] = useState<string[]>([]);
-
-  useEffect(() => {
-    QuoteService.getUsedNumbers()
-      .then(setNumerosUsados)
-      .catch(() => setNumerosUsados([]));
-  }, []);
 
   // Estado do PDF
   const [pdfQuote, setPdfQuote] = useState<Quote | null>(null);
@@ -1027,12 +1018,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     const mes = agora.getMonth() + 1;
     const prefixo = `${ano}-${mes}`;
 
-    // Inclui os números dos orçamentos que estão na papeleira. Se um
-    // orçamento for eliminado, o número dele não volta a ser atribuído.
-    const numeros = [
-      ...quotes.map(q => q.number),
-      ...numerosUsados,
-    ];
+    // Decisão do João (16/09/2026): a papeleira NÃO conta para a numeração.
+    // Um número usado por um orçamento eliminado volta a ficar livre.
+    // Consequência a ter presente: se esse orçamento for reposto mais tarde,
+    // pode haver dois com o mesmo número — o restoreQuote avisa quando isso
+    // acontece, mas não impede.
+    const numeros = quotes.map(q => q.number);
 
     let maiorSeq = 0;
     numeros.forEach(numero => {
@@ -1225,6 +1216,16 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
             const ativos = await QuoteService.getAll();
             setQuotes(ativos);
             toast.success('Orçamento reposto');
+            // Como a papeleira não trava a numeração, o número pode ter sido
+            // entretanto reatribuído. Avisa, para não passarem dois documentos
+            // diferentes com o mesmo número.
+            const repetidos = ativos.filter(q => q.number === alvo?.number);
+            if (repetidos.length > 1) {
+              toast.warning(
+                `Atenção: o número ${alvo?.number} está agora em dois orçamentos. Convém renumerar um deles.`,
+                { duration: 10000 }
+              );
+            }
           })
           .catch(() => {
             toast.error('Erro ao repor orçamento');

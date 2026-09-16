@@ -93,16 +93,6 @@ export const QuoteService = {
     return (data || []).map(mapFromDb);
   },
 
-  /**
-   * Todos os números já atribuídos, incluindo os da papeleira.
-   * Serve para o número do próximo orçamento nunca repetir um que
-   * já tenha sido usado, mesmo que esse orçamento tenha sido eliminado.
-   */
-  async getUsedNumbers(): Promise<string[]> {
-    const { data, error } = await supabase.from('quotes').select('number');
-    if (error) { console.error("SUPABASE ERROR:", error); return []; }
-    return (data || []).map((r: any) => r.number).filter(Boolean);
-  },
 
   /** Guarda (Cria ou Atualiza) um orçamento */
   async save(quote: Quote): Promise<void> {
