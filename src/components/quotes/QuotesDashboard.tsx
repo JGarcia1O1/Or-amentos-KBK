@@ -19,6 +19,7 @@ import {
   Pencil,
   Copy,
   Trash2,
+  Trash,
   Printer,
   Plus,
   ChevronDown,
@@ -42,6 +43,8 @@ export default function QuotesDashboard() {
     totalApprovedAmount,
     averageCostAmount,
     hideInternal,
+    isAdmin,
+    setCurrentView,
   } = useApp();
 
   const [showDropdown, setShowDropdown] = useState(false);
@@ -198,6 +201,19 @@ export default function QuotesDashboard() {
               </button>
             ))}
           </div>
+
+          {/* Papeleira — só a administração vê e repõe */}
+          {isAdmin && (
+            <button
+              type="button"
+              onClick={() => setCurrentView('quotes-trash')}
+              title="Orçamentos eliminados"
+              className="inline-flex items-center gap-1.5 border border-gray-200 bg-white hover:bg-gray-50 text-gray-600 hover:text-gray-900 text-xs font-semibold px-3 py-1.5 rounded-lg transition-all"
+            >
+              <Trash className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Papeleira</span>
+            </button>
+          )}
 
           {/* Botão Novo Orçamento com Dropdown */}
           <div className="relative" ref={dropdownRef}>

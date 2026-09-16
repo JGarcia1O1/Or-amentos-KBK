@@ -10,6 +10,7 @@ import ObrasView from '@/components/obras/ObrasView';
 import QuotesDashboard from '@/components/quotes/QuotesDashboard';
 import QuoteEditor from '@/components/quotes/QuoteEditor';
 import QuoteWizard from '@/components/quotes/QuoteWizard';
+import QuotesTrashView from '@/components/quotes/QuotesTrashView';
 import ClientsView from '@/components/clients/ClientsView';
 import MaterialsView from '@/components/materials/MaterialsView';
 import SettingsView from '@/components/settings/SettingsView';
@@ -26,6 +27,7 @@ const VIEW_MODULE: Record<string, ModuleKey> = {
   'dashboard': 'dashboard',
   'obras': 'obras',
   'quotes-list': 'quotes',
+  'quotes-trash': 'quotes',
   'quote-editor': 'quotes',
   'quote-wizard': 'quotes',
   'clients': 'clients',
@@ -127,6 +129,7 @@ export default function HomePage() {
               {currentView === 'dashboard' && <CompanyDashboard />}
               {currentView === 'obras' && <ObrasView />}
               {currentView === 'quotes-list' && <QuotesDashboard />}
+              {currentView === 'quotes-trash' && <QuotesTrashView />}
               {currentView === 'quote-editor' && <QuoteEditor />}
               {currentView === 'quote-wizard' && <QuoteWizard />}
               {currentView === 'clients' && <ClientsView />}

@@ -238,6 +238,9 @@ export interface Quote {
   scopeExcluded?: string[];
   lockedBy?: string; // Para preparar ambiente Multi-user
   lastEditedAt?: number; // Timestamp da última edição
+  // Papeleira: vazio = orçamento ativo; com data = está na papeleira.
+  // Eliminar nunca apaga da base de dados, só marca esta data.
+  deletedAt?: string | null;
 }
 
 export interface CompanyInfo {

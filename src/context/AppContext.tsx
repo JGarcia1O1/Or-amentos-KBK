@@ -46,8 +46,8 @@ import {
 
 interface AppContextType {
   // Navegação e Utilizador
-  currentView: 'dashboard' | 'obras' | 'visits-list' | 'visit-editor' | 'quotes-list' | 'quote-editor' | 'quote-wizard' | 'clients' | 'materials' | 'settings' | 'emails';
-  setCurrentView: (view: 'dashboard' | 'obras' | 'visits-list' | 'visit-editor' | 'quotes-list' | 'quote-editor' | 'quote-wizard' | 'clients' | 'materials' | 'settings' | 'emails') => void;
+  currentView: 'dashboard' | 'obras' | 'visits-list' | 'visit-editor' | 'quotes-list' | 'quotes-trash' | 'quote-editor' | 'quote-wizard' | 'clients' | 'materials' | 'settings' | 'emails';
+  setCurrentView: (view: 'dashboard' | 'obras' | 'visits-list' | 'visit-editor' | 'quotes-list' | 'quotes-trash' | 'quote-editor' | 'quote-wizard' | 'clients' | 'materials' | 'settings' | 'emails') => void;
   currentUser: string;
   setCurrentUser: (user: string) => void;
   userRole: UserRole;
@@ -126,6 +126,13 @@ interface AppContextType {
   duplicateQuote: (quote: Quote) => void;
   deleteQuote: (id: string) => void;
 
+  // Papeleira de orçamentos
+  deletedQuotes: Quote[];
+  papeleiraCarregando: boolean;
+  carregarPapeleira: () => Promise<void>;
+  restoreQuote: (id: string) => void;
+  purgeQuote: (id: string) => void;
+
   // Filtros
   searchQuery: string;
   setSearchQuery: (query: string) => void;
@@ -166,7 +173,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setIsMounted(true);
   }, []);
 
-  const [currentView, setCurrentView] = useState<'dashboard' | 'obras' | 'visits-list' | 'visit-editor' | 'quotes-list' | 'quote-editor' | 'quote-wizard' | 'clients' | 'materials' | 'settings' | 'emails'>('quotes-list');
+  const [currentView, setCurrentView] = useState<'dashboard' | 'obras' | 'visits-list' | 'visit-editor' | 'quotes-list' | 'quotes-trash' | 'quote-editor' | 'quote-wizard' | 'clients' | 'materials' | 'settings' | 'emails'>('quotes-list');
   const [currentUser, setCurrentUser] = useState<string>('A Carregar...');
   const [userRole, setUserRole] = useState<UserRole>('trabalhador');
 
@@ -460,6 +467,20 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [selectedQuote, setSelectedQuote] = useState<Quote | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState('Todos');
+
+  // Papeleira: orçamentos eliminados mas não apagados.
+  const [deletedQuotes, setDeletedQuotes] = useState<Quote[]>([]);
+  const [papeleiraCarregando, setPapeleiraCarregando] = useState(false);
+
+  // Todos os números já atribuídos, incluindo os da papeleira. Sem isto,
+  // eliminar o último orçamento do mês faria o seguinte repetir o número.
+  const [numerosUsados, setNumerosUsados] = useState<string[]>([]);
+
+  useEffect(() => {
+    QuoteService.getUsedNumbers()
+      .then(setNumerosUsados)
+      .catch(() => setNumerosUsados([]));
+  }, []);
 
   // Estado do PDF
   const [pdfQuote, setPdfQuote] = useState<Quote | null>(null);
@@ -1006,10 +1027,17 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     const mes = agora.getMonth() + 1;
     const prefixo = `${ano}-${mes}`;
 
+    // Inclui os números dos orçamentos que estão na papeleira. Se um
+    // orçamento for eliminado, o número dele não volta a ser atribuído.
+    const numeros = [
+      ...quotes.map(q => q.number),
+      ...numerosUsados,
+    ];
+
     let maiorSeq = 0;
-    quotes.forEach(q => {
-      if (q.number && q.number.startsWith(prefixo)) {
-        const sufixo = q.number.slice(prefixo.length);
+    numeros.forEach(numero => {
+      if (numero && numero.startsWith(prefixo)) {
+        const sufixo = numero.slice(prefixo.length);
         if (/^\d+$/.test(sufixo)) {
           const seq = parseInt(sufixo, 10);
           if (!isNaN(seq) && seq > maiorSeq) maiorSeq = seq;
@@ -1150,17 +1178,77 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       .catch(() => toast.error('Erro ao duplicar orçamento'));
   };
 
+  // Eliminar deixou de apagar: o orçamento vai para a papeleira e fica
+  // lá até alguém da administração o repor ou o apagar definitivamente.
   const deleteQuote = (id: string) => {
-    confirmAction('Eliminar Orçamento', 'Tem a certeza que deseja eliminar este orçamento? Esta ação não pode ser revertida.', () => {
-      setQuotes(prev => prev.filter(q => q.id !== id));
-      if (selectedQuote?.id === id) {
-        setSelectedQuote(null);
-        setCurrentView('quotes-list');
+    confirmAction(
+      'Enviar para a Papeleira',
+      'O orçamento deixa de aparecer nas listas, mas não é apagado. A administração pode repô-lo a partir da Papeleira.',
+      () => {
+        setQuotes(prev => prev.filter(q => q.id !== id));
+        if (selectedQuote?.id === id) {
+          setSelectedQuote(null);
+          setCurrentView('quotes-list');
+        }
+        QuoteService.softDelete(id)
+          .then(() => toast.success('Orçamento enviado para a Papeleira'))
+          .catch(() => toast.error('Erro ao enviar para a Papeleira'));
       }
-      QuoteService.delete(id)
-        .then(() => toast.success('Orçamento eliminado'))
-        .catch(() => toast.error('Erro ao apagar orçamento'));
-    });
+    );
+  };
+
+  // ============================================================
+  // PAPELEIRA
+  // Carregada a pedido, só quando a administração abre a vista.
+  // ============================================================
+  const carregarPapeleira = React.useCallback(async () => {
+    setPapeleiraCarregando(true);
+    try {
+      const lista = await QuoteService.getDeleted();
+      setDeletedQuotes(lista);
+    } catch {
+      toast.error('Erro ao carregar a Papeleira');
+    } finally {
+      setPapeleiraCarregando(false);
+    }
+  }, []);
+
+  const restoreQuote = (id: string) => {
+    const alvo = deletedQuotes.find(q => q.id === id);
+    confirmAction(
+      'Repor Orçamento',
+      `Repor o orçamento ${alvo?.number || ''}? Volta a aparecer na lista de orçamentos.`,
+      () => {
+        setDeletedQuotes(prev => prev.filter(q => q.id !== id));
+        QuoteService.restore(id)
+          .then(async () => {
+            const ativos = await QuoteService.getAll();
+            setQuotes(ativos);
+            toast.success('Orçamento reposto');
+          })
+          .catch(() => {
+            toast.error('Erro ao repor orçamento');
+            carregarPapeleira();
+          });
+      }
+    );
+  };
+
+  const purgeQuote = (id: string) => {
+    const alvo = deletedQuotes.find(q => q.id === id);
+    confirmAction(
+      'Apagar Definitivamente',
+      `Apagar de vez o orçamento ${alvo?.number || ''}? Esta ação não tem volta dentro do software. A única forma de o recuperar passa a ser o backup.`,
+      () => {
+        setDeletedQuotes(prev => prev.filter(q => q.id !== id));
+        QuoteService.purge(id)
+          .then(() => toast.success('Orçamento apagado definitivamente'))
+          .catch(() => {
+            toast.error('Erro ao apagar orçamento');
+            carregarPapeleira();
+          });
+      }
+    );
   };
 
   const openPdfPreview = (quote: Quote) => {
@@ -1248,6 +1336,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         updateSelectedQuote,
         duplicateQuote,
         deleteQuote,
+        deletedQuotes,
+        papeleiraCarregando,
+        carregarPapeleira,
+        restoreQuote,
+        purgeQuote,
         searchQuery,
         setSearchQuery,
         filterStatus,
