@@ -10,6 +10,25 @@ import { supabase } from '@/lib/supabase';
  * reservado à administração, remove mesmo a linha.
  */
 
+/* ==========================================================
+   MARCAS NO NÚMERO DO ORÇAMENTO
+   A base de dados obriga o número a ser único em toda a tabela
+   (quotes_number_key) e não sabe o que é a papeleira. Por isso,
+   ao ir para a papeleira o orçamento passa a chamar-se
+   "Papeleira 2026-911" e o 2026-911 fica livre para o próximo.
+   Ao ser reposto passa a "Recuperado 2026-911", que também não
+   choca com um 2026-911 entretanto atribuído a outro orçamento.
+   ========================================================== */
+export const MARCA_PAPELEIRA = 'Papeleira';
+export const MARCA_RECUPERADO = 'Recuperado';
+
+/** "Papeleira 2026-911" -> "2026-911" */
+export function numeroBase(numero: string): string {
+  return String(numero || '')
+    .replace(new RegExp(`^(${MARCA_PAPELEIRA}|${MARCA_RECUPERADO})\\s+`), '')
+    .trim();
+}
+
 /** Linha do Supabase (snake_case) -> Quote (camelCase). */
 function mapFromDb(q: any): Quote {
   return {
@@ -119,22 +138,33 @@ export const QuoteService = {
     if (error) throw new Error(`Falha ao gravar orçamentos em massa: ${error.message}`);
   },
 
-  /** Envia para a papeleira. O orçamento continua na base de dados. */
-  async softDelete(id: string): Promise<void> {
+  /**
+   * Envia para a papeleira. O orçamento continua na base de dados, mas o
+   * número passa a "Papeleira 2026-911" — o 2026-911 fica livre.
+   */
+  async softDelete(id: string, numeroAtual: string): Promise<string> {
+    const marcado = `${MARCA_PAPELEIRA} ${numeroBase(numeroAtual)}`;
     const { error } = await supabase
       .from('quotes')
-      .update({ deleted_at: new Date().toISOString() })
+      .update({ deleted_at: new Date().toISOString(), number: marcado })
       .eq('id', id);
     if (error) throw new Error(`Falha ao enviar para a papeleira: ${error.message}`);
+    return marcado;
   },
 
-  /** Repõe um orçamento que estava na papeleira */
-  async restore(id: string): Promise<void> {
+  /**
+   * Repõe um orçamento que estava na papeleira. Fica como
+   * "Recuperado 2026-911", para se perceber de onde veio e para nunca
+   * chocar com um 2026-911 entretanto atribuído a outro orçamento.
+   */
+  async restore(id: string, numeroAtual: string): Promise<string> {
+    const recuperado = `${MARCA_RECUPERADO} ${numeroBase(numeroAtual)}`;
     const { error } = await supabase
       .from('quotes')
-      .update({ deleted_at: null })
+      .update({ deleted_at: null, number: recuperado })
       .eq('id', id);
     if (error) throw new Error(`Falha ao repor orçamento: ${error.message}`);
+    return recuperado;
   },
 
   /**

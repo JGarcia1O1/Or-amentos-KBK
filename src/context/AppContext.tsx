@@ -1191,12 +1191,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       'Enviar para a Papeleira',
       'O orçamento deixa de aparecer nas listas, mas não é apagado. A administração pode repô-lo a partir da Papeleira.',
       () => {
+        const alvo = quotes.find(q => q.id === id);
         setQuotes(prev => prev.filter(q => q.id !== id));
         if (selectedQuote?.id === id) {
           setSelectedQuote(null);
           setCurrentView('quotes-list');
         }
-        QuoteService.softDelete(id)
+        QuoteService.softDelete(id, alvo?.number || '')
           .then(() => toast.success('Orçamento enviado para a Papeleira'))
           .catch(() => toast.error('Erro ao enviar para a Papeleira'));
       }
@@ -1223,24 +1224,14 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     const alvo = deletedQuotes.find(q => q.id === id);
     confirmAction(
       'Repor Orçamento',
-      `Repor o orçamento ${alvo?.number || ''}? Volta a aparecer na lista de orçamentos.`,
+      `Repor o orçamento ${alvo?.number || ''}? Volta à lista de orçamentos marcado como "Recuperado".`,
       () => {
         setDeletedQuotes(prev => prev.filter(q => q.id !== id));
-        QuoteService.restore(id)
-          .then(async () => {
+        QuoteService.restore(id, alvo?.number || '')
+          .then(async (novoNumero) => {
             const ativos = await QuoteService.getAll();
             setQuotes(ativos);
-            toast.success('Orçamento reposto');
-            // Como a papeleira não trava a numeração, o número pode ter sido
-            // entretanto reatribuído. Avisa, para não passarem dois documentos
-            // diferentes com o mesmo número.
-            const repetidos = ativos.filter(q => q.number === alvo?.number);
-            if (repetidos.length > 1) {
-              toast.warning(
-                `Atenção: o número ${alvo?.number} está agora em dois orçamentos. Convém renumerar um deles.`,
-                { duration: 10000 }
-              );
-            }
+            toast.success(`Orçamento reposto como "${novoNumero}"`);
           })
           .catch(() => {
             toast.error('Erro ao repor orçamento');
