@@ -147,15 +147,28 @@ ALTER FUNCTION public.block_adjudicado_changes()       SET search_path = public,
 -- Quem não tem sessão iniciada não tem nada que as executar.
 -- Os utilizadores autenticados mantêm o acesso — a aplicação precisa.
 -- =====================================================================
-REVOKE EXECUTE ON FUNCTION public.kubik_can_edit(text)  FROM anon;
-REVOKE EXECUTE ON FUNCTION public.kubik_can_view(text)  FROM anon;
-REVOKE EXECUTE ON FUNCTION public.kubik_level(text)     FROM anon;
-REVOKE EXECUTE ON FUNCTION public.kubik_is_admin()      FROM anon;
-REVOKE EXECUTE ON FUNCTION public.kubik_handle_new_user() FROM anon, authenticated;
+-- ERRO NA PRIMEIRA VERSÃO DESTE BLOCO (corrigido a 16/09):
+-- revogar só de "anon" não serve de nada. No PostgreSQL as funções nascem
+-- com EXECUTE concedido a PUBLIC, e o anon é membro de PUBLIC — continuava
+-- a poder chamá-las. É de PUBLIC que tem de sair.
+REVOKE EXECUTE ON FUNCTION public.kubik_can_view(text)    FROM PUBLIC, anon;
+REVOKE EXECUTE ON FUNCTION public.kubik_can_edit(text)    FROM PUBLIC, anon;
+REVOKE EXECUTE ON FUNCTION public.kubik_level(text)       FROM PUBLIC, anon;
+REVOKE EXECUTE ON FUNCTION public.kubik_is_admin()        FROM PUBLIC, anon;
+REVOKE EXECUTE ON FUNCTION public.kubik_handle_new_user() FROM PUBLIC, anon, authenticated;
+REVOKE EXECUTE ON FUNCTION public.rls_auto_enable()       FROM PUBLIC, anon, authenticated;
+
+-- ATENÇÃO: estas quatro TÊM de continuar disponíveis ao utilizador
+-- autenticado. As políticas RLS chamam-nas e são avaliadas com os
+-- privilégios de quem faz a consulta — sem isto, ninguém vê nada.
+GRANT EXECUTE ON FUNCTION public.kubik_can_view(text) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.kubik_can_edit(text) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.kubik_level(text)    TO authenticated;
+GRANT EXECUTE ON FUNCTION public.kubik_is_admin()     TO authenticated;
 
 -- kubik_handle_new_user é o gatilho que cria o perfil quando nasce um
--- utilizador. É chamado pelo sistema, nunca pela aplicação, por isso não
--- precisa de ser executável por ninguém de fora.
+-- utilizador, e rls_auto_enable é um event trigger. São chamados pelo
+-- sistema, nunca pela aplicação, por isso ninguém de fora precisa deles.
 
 
 -- =====================================================================
