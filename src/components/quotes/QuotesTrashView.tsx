@@ -12,6 +12,7 @@ import {
   FileText,
   Loader2,
   ChevronDown,
+  Printer,
 } from 'lucide-react';
 
 /**
@@ -45,6 +46,7 @@ export default function QuotesTrashView() {
     restoreQuote,
     purgeQuote,
     purgeQuotes,
+    openPdfPreview,
     setCurrentView,
     isAdmin,
   } = useApp();
@@ -281,6 +283,14 @@ export default function QuotesTrashView() {
                     </div>
 
                     <div className="flex items-center gap-2 shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => openPdfPreview(q)}
+                        className="h-9 w-9 rounded-lg border border-gray-200 text-emerald-600 hover:bg-emerald-50 flex items-center justify-center transition"
+                        title="Ver o PDF oficial desta proposta"
+                      >
+                        <Printer className="w-4 h-4" />
+                      </button>
                       <button
                         type="button"
                         onClick={() => restoreQuote(q.id)}
