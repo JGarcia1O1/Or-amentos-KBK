@@ -132,6 +132,7 @@ interface AppContextType {
   carregarPapeleira: () => Promise<void>;
   restoreQuote: (id: string) => void;
   purgeQuote: (id: string) => void;
+  purgeQuotes: (ids: string[]) => void;
 
   // Filtros
   searchQuery: string;
@@ -1252,6 +1253,34 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     );
   };
 
+  // Apagar de vez vários de uma vez, a partir da seleção na papeleira.
+  const purgeQuotes = (ids: string[]) => {
+    if (ids.length === 0) return;
+    const quantos = ids.length;
+    confirmAction(
+      'Apagar Definitivamente',
+      quantos === 1
+        ? 'Apagar de vez este orçamento? Não tem volta dentro do software; só o backup o poderá recuperar.'
+        : `Apagar de vez ${quantos} orçamentos? Não tem volta dentro do software; só o backup os poderá recuperar.`,
+      () => {
+        const conjunto = new Set(ids);
+        setDeletedQuotes(prev => prev.filter(q => !conjunto.has(q.id)));
+        QuoteService.purgeMany(ids)
+          .then(() =>
+            toast.success(
+              quantos === 1
+                ? 'Orçamento apagado definitivamente'
+                : `${quantos} orçamentos apagados definitivamente`
+            )
+          )
+          .catch(() => {
+            toast.error('Erro ao apagar orçamentos');
+            carregarPapeleira();
+          });
+      }
+    );
+  };
+
   const openPdfPreview = (quote: Quote) => {
     setPdfQuote(quote);
     setShowPdfModal(true);
@@ -1342,6 +1371,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         carregarPapeleira,
         restoreQuote,
         purgeQuote,
+        purgeQuotes,
         searchQuery,
         setSearchQuery,
         filterStatus,

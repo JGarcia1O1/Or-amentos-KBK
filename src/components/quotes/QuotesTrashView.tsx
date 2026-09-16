@@ -44,11 +44,36 @@ export default function QuotesTrashView() {
     carregarPapeleira,
     restoreQuote,
     purgeQuote,
+    purgeQuotes,
     setCurrentView,
     isAdmin,
   } = useApp();
 
   const [fechados, setFechados] = useState<Record<string, boolean>>({});
+  const [selecionados, setSelecionados] = useState<string[]>([]);
+
+  // Se a papeleira mudar por baixo dos pés, não deixar seleções órfãs
+  useEffect(() => {
+    const existentes = new Set(deletedQuotes.map(q => q.id));
+    setSelecionados(prev => prev.filter(id => existentes.has(id)));
+  }, [deletedQuotes]);
+
+  const estaSelecionado = (id: string) => selecionados.includes(id);
+
+  const alternarSelecao = (id: string) => {
+    setSelecionados(prev =>
+      prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
+    );
+  };
+
+  const alternarMes = (ids: string[]) => {
+    const todosJaEstao = ids.every(id => selecionados.includes(id));
+    setSelecionados(prev =>
+      todosJaEstao
+        ? prev.filter(id => !ids.includes(id))
+        : Array.from(new Set([...prev, ...ids]))
+    );
+  };
 
   useEffect(() => {
     carregarPapeleira();
@@ -138,6 +163,32 @@ export default function QuotesTrashView() {
         </span>
       </div>
 
+      {/* Barra de seleção — só aparece quando há alguma coisa escolhida */}
+      {selecionados.length > 0 && (
+        <div className="sticky top-2 z-20 bg-gray-900 text-white rounded-xl px-4 py-2.5 flex items-center justify-between gap-3 shadow-lg">
+          <span className="text-xs font-semibold">
+            {selecionados.length} selecionado{selecionados.length === 1 ? '' : 's'}
+          </span>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setSelecionados([])}
+              className="text-[11px] font-semibold text-gray-300 hover:text-white transition px-2 py-1"
+            >
+              Limpar
+            </button>
+            <button
+              type="button"
+              onClick={() => purgeQuotes(selecionados)}
+              className="inline-flex items-center gap-1.5 bg-red-600 hover:bg-red-500 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              Apagar definitivamente
+            </button>
+          </div>
+        </div>
+      )}
+
       {papeleiraCarregando && (
         <div className="flex items-center gap-2 text-xs text-gray-400 py-10 justify-center">
           <Loader2 className="w-4 h-4 animate-spin" />
@@ -158,34 +209,52 @@ export default function QuotesTrashView() {
         return (
           <div key={chave} className="bg-white border border-gray-200 rounded-2xl overflow-hidden">
             {/* Separador do mês */}
-            <button
-              type="button"
-              onClick={() => alternar(chave, indice)}
-              aria-expanded={aberto}
-              className="w-full flex items-center justify-between gap-3 px-4 py-3 hover:bg-gray-50 transition text-left"
-            >
-              <div className="flex items-center gap-2.5 min-w-0">
-                <ChevronDown
-                  className={`w-4 h-4 text-gray-400 shrink-0 transition-transform duration-200 ${
-                    aberto ? '' : '-rotate-90'
-                  }`}
-                />
-                <span className="text-sm font-bold text-gray-900 truncate">
-                  {rotuloDoMes(chave)}
+            <div className="flex items-center gap-2 px-4 py-3 hover:bg-gray-50 transition">
+              <input
+                type="checkbox"
+                checked={lista.every(q => estaSelecionado(q.id))}
+                onChange={() => alternarMes(lista.map(q => q.id))}
+                title="Selecionar todos deste mês"
+                className="w-4 h-4 rounded border-gray-300 text-gray-900 focus:ring-gray-900 cursor-pointer shrink-0"
+              />
+              <button
+                type="button"
+                onClick={() => alternar(chave, indice)}
+                aria-expanded={aberto}
+                className="flex-1 flex items-center justify-between gap-3 text-left min-w-0"
+              >
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <ChevronDown
+                    className={`w-4 h-4 text-gray-400 shrink-0 transition-transform duration-200 ${
+                      aberto ? '' : '-rotate-90'
+                    }`}
+                  />
+                  <span className="text-sm font-bold text-gray-900 truncate">
+                    {rotuloDoMes(chave)}
+                  </span>
+                </div>
+                <span className="text-[11px] font-bold text-gray-400 shrink-0">
+                  {lista.length}
                 </span>
-              </div>
-              <span className="text-[11px] font-bold text-gray-400 shrink-0">
-                {lista.length}
-              </span>
-            </button>
+              </button>
+            </div>
 
             {aberto && (
               <div className="border-t border-gray-100 divide-y divide-gray-100">
                 {lista.map(q => (
                   <div
                     key={q.id}
-                    className="p-4 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4"
+                    className={`p-4 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 transition-colors ${
+                      estaSelecionado(q.id) ? 'bg-gray-50' : ''
+                    }`}
                   >
+                    <input
+                      type="checkbox"
+                      checked={estaSelecionado(q.id)}
+                      onChange={() => alternarSelecao(q.id)}
+                      className="w-4 h-4 rounded border-gray-300 text-gray-900 focus:ring-gray-900 cursor-pointer shrink-0 self-start sm:self-center"
+                    />
+
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">
                         <FileText className="w-3.5 h-3.5 text-gray-400 shrink-0" />
