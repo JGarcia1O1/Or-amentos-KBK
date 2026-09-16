@@ -473,6 +473,17 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [deletedQuotes, setDeletedQuotes] = useState<Quote[]>([]);
   const [papeleiraCarregando, setPapeleiraCarregando] = useState(false);
 
+  // Números já atribuídos, incluindo os da papeleira. A base de dados
+  // obriga o número a ser único e não distingue papeleira, por isso um
+  // orçamento eliminado continua a ocupar o número dele.
+  const [numerosUsados, setNumerosUsados] = useState<string[]>([]);
+
+  useEffect(() => {
+    QuoteService.getUsedNumbers()
+      .then(setNumerosUsados)
+      .catch(() => setNumerosUsados([]));
+  }, []);
+
 
   // Estado do PDF
   const [pdfQuote, setPdfQuote] = useState<Quote | null>(null);
@@ -1019,12 +1030,15 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     const mes = agora.getMonth() + 1;
     const prefixo = `${ano}-${mes}`;
 
-    // Decisão do João (16/09/2026): a papeleira NÃO conta para a numeração.
-    // Um número usado por um orçamento eliminado volta a ficar livre.
-    // Consequência a ter presente: se esse orçamento for reposto mais tarde,
-    // pode haver dois com o mesmo número — o restoreQuote avisa quando isso
-    // acontece, mas não impede.
-    const numeros = quotes.map(q => q.number);
+    // A papeleira TEM de contar para a numeração. Não é uma opção: a base
+    // de dados tem a regra quotes_number_key, que obriga o número a ser
+    // único em toda a tabela e não sabe o que é a papeleira. Um orçamento
+    // eliminado continua a ocupar o número; reaproveitá-lo faz a gravação
+    // do orçamento novo falhar com "duplicate key value".
+    const numeros = [
+      ...quotes.map(q => q.number),
+      ...numerosUsados,
+    ];
 
     let maiorSeq = 0;
     numeros.forEach(numero => {

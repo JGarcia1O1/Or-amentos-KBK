@@ -94,6 +94,19 @@ export const QuoteService = {
   },
 
 
+  /**
+   * Todos os números já atribuídos, incluindo os da papeleira.
+   * A base de dados tem uma regra de número único (quotes_number_key) que
+   * não distingue papeleira: um orçamento eliminado continua a ocupar o
+   * número. Sem esta lista, criar um orçamento novo rebentava com
+   * "duplicate key value violates unique constraint".
+   */
+  async getUsedNumbers(): Promise<string[]> {
+    const { data, error } = await supabase.from('quotes').select('number');
+    if (error) { console.error("SUPABASE ERROR:", error); return []; }
+    return (data || []).map((r: any) => r.number).filter(Boolean);
+  },
+
   /** Guarda (Cria ou Atualiza) um orçamento */
   async save(quote: Quote): Promise<void> {
     const { error } = await supabase.from('quotes').upsert([mapToDb(quote)]);
