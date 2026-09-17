@@ -43,6 +43,9 @@ import {
   CheckCircle2,
   XCircle,
   Lock,
+  GripVertical,
+  ArrowUp,
+  ArrowDown,
 } from 'lucide-react';
 
 export default function QuoteEditor() {
@@ -73,6 +76,13 @@ export default function QuoteEditor() {
 
   // Cartões abertos no telemóvel (a lista arranca toda fechada)
   const [cartaoAberto, setCartaoAberto] = useState<Record<string, boolean>>({});
+
+  // Arrastar artigos, só no computador.
+  // A linha só fica arrastável enquanto a pega está premida — se estivesse
+  // sempre, não se conseguia selecionar texto dentro dos campos da linha.
+  const [linhaArrastavel, setLinhaArrastavel] = useState<string | null>(null);
+  const [aArrastar, setAArrastar] = useState<{ cIdx: number; iIdx: number } | null>(null);
+  const [linhaAlvo, setLinhaAlvo] = useState<string | null>(null);
 
   // Barra de rentabilidade no telemóvel: fechada mostra só o total
   const [rentabilidadeAberta, setRentabilidadeAberta] = useState(false);
@@ -402,6 +412,102 @@ export default function QuoteEditor() {
 
     updateSelectedQuote({ ...quote, chapters: newChapters });
     toast.success('Artigo duplicado.');
+  };
+
+  // ============================================================
+  // REORDENAR ARTIGOS
+  // Um artigo principal anda sempre com os sub-artigos que vêm logo a
+  // seguir — decisão do João. Um sub-artigo move-se sozinho.
+  // A numeração (1.2, 1.2.1) nunca é gravada: é gerada a partir da posição
+  // e da flag isSubItem, por isso acerta-se sozinha depois de qualquer
+  // movimento. Não é preciso mexer em códigos aqui.
+  // ============================================================
+
+  /** Quantos artigos andam juntos a partir deste índice. */
+  const tamanhoDoBloco = (items: QuoteItem[], idx: number): number => {
+    if (!items[idx] || items[idx].isSubItem) return 1;
+    let n = 1;
+    while (idx + n < items.length && items[idx + n].isSubItem) n++;
+    return n;
+  };
+
+  /** Índice do artigo principal a que este pertence. */
+  const inicioDoBloco = (items: QuoteItem[], idx: number): number => {
+    let i = idx;
+    while (i > 0 && items[i]?.isSubItem) i--;
+    return i;
+  };
+
+  /** Grava a nova ordem, garantindo que o primeiro artigo nunca é sub-artigo. */
+  const aplicarOrdem = (chapterIndex: number, items: QuoteItem[]) => {
+    const normalizados =
+      items.length > 0 && items[0].isSubItem
+        ? [{ ...items[0], isSubItem: false }, ...items.slice(1)]
+        : items;
+
+    const newChapters = quote.chapters.map((chap, cIdx) =>
+      cIdx === chapterIndex ? { ...chap, items: normalizados } : chap
+    );
+    updateSelectedQuote({ ...quote, chapters: newChapters });
+  };
+
+  /** Largar um artigo em cima de outro (arrastar no computador). */
+  const reordenarArtigo = (chapterIndex: number, de: number, para: number) => {
+    const items = [...quote.chapters[chapterIndex].items];
+    if (de === para || !items[de]) return;
+
+    const tam = tamanhoDoBloco(items, de);
+    // Largar dentro do próprio bloco não faz nada
+    if (para >= de && para < de + tam) return;
+
+    // Um artigo principal nunca se mete entre outro pai e os filhos dele
+    const destino = items[de].isSubItem ? para : inicioDoBloco(items, para);
+
+    const bloco = items.splice(de, tam);
+    const ajustado = destino > de ? destino - tam : destino;
+    items.splice(Math.max(0, Math.min(ajustado, items.length)), 0, ...bloco);
+
+    aplicarOrdem(chapterIndex, items);
+  };
+
+  /** Setas para cima/baixo (telemóvel). */
+  const moverArtigo = (chapterIndex: number, iIdx: number, direcao: -1 | 1) => {
+    const items = [...quote.chapters[chapterIndex].items];
+    const alvo = items[iIdx];
+    if (!alvo) return;
+
+    if (alvo.isSubItem) {
+      const destino = iIdx + direcao;
+      if (destino < 0 || destino >= items.length) return;
+      const copia = [...items];
+      copia[iIdx] = items[destino];
+      copia[destino] = items[iIdx];
+      aplicarOrdem(chapterIndex, copia);
+      return;
+    }
+
+    const tam = tamanhoDoBloco(items, iIdx);
+
+    if (direcao === -1) {
+      if (iIdx === 0) return;
+      const anterior = inicioDoBloco(items, iIdx - 1);
+      const bloco = items.splice(iIdx, tam);
+      items.splice(anterior, 0, ...bloco);
+    } else {
+      const seguinte = iIdx + tam;
+      if (seguinte >= items.length) return;
+      const tamSeguinte = tamanhoDoBloco(items, seguinte);
+      const bloco = items.splice(iIdx, tam);
+      items.splice(iIdx + tamSeguinte, 0, ...bloco);
+    }
+
+    aplicarOrdem(chapterIndex, items);
+  };
+
+  const limparArrasto = () => {
+    setAArrastar(null);
+    setLinhaAlvo(null);
+    setLinhaArrastavel(null);
   };
 
   // ============================================================
@@ -1028,11 +1134,53 @@ export default function QuoteEditor() {
 
                       return (
                         <React.Fragment key={item.id}>
-                          <tr className={`hover:bg-gray-50/50 ${isAuto ? 'bg-blue-50/10' : ''}`}>
+                          <tr
+                            draggable={linhaArrastavel === item.id}
+                            onDragStart={e => {
+                              setAArrastar({ cIdx, iIdx });
+                              e.dataTransfer.effectAllowed = 'move';
+                            }}
+                            onDragOver={e => {
+                              if (aArrastar && aArrastar.cIdx === cIdx) {
+                                e.preventDefault();
+                                e.dataTransfer.dropEffect = 'move';
+                                if (linhaAlvo !== item.id) setLinhaAlvo(item.id);
+                              }
+                            }}
+                            onDrop={e => {
+                              e.preventDefault();
+                              if (aArrastar && aArrastar.cIdx === cIdx) {
+                                reordenarArtigo(cIdx, aArrastar.iIdx, iIdx);
+                              }
+                              limparArrasto();
+                            }}
+                            onDragEnd={limparArrasto}
+                            className={`hover:bg-gray-50/50 transition-colors ${
+                              isAuto ? 'bg-blue-50/10' : ''
+                            } ${
+                              // Separador só entre artigos principais: assim um
+                              // artigo e os seus sub-artigos leem-se como um grupo
+                              !item.isSubItem && iIdx > 0 ? 'border-t border-gray-200' : ''
+                            } ${linhaAlvo === item.id ? 'bg-blue-50/60' : ''} ${
+                              aArrastar?.cIdx === cIdx && aArrastar.iIdx === iIdx
+                                ? 'opacity-40'
+                                : ''
+                            }`}
+                          >
                             {/* Código do Artigo */}
-                            <td className="py-3 px-3 font-mono font-bold text-gray-400 text-[11px] align-top">
+                            <td className="py-4 px-3 font-mono font-bold text-gray-400 text-[11px] align-top">
                               <div className="flex flex-col gap-1 items-start">
-                                <span>{displayCode}</span>
+                                <div className="flex items-center gap-1">
+                                  <span
+                                    onMouseDown={() => setLinhaArrastavel(item.id)}
+                                    onMouseUp={() => setLinhaArrastavel(null)}
+                                    title="Arrastar para mudar de posição"
+                                    className="cursor-grab active:cursor-grabbing text-gray-300 hover:text-gray-500 -ml-1"
+                                  >
+                                    <GripVertical className="w-3.5 h-3.5" />
+                                  </span>
+                                  <span>{displayCode}</span>
+                                </div>
                                 <button
                                   type="button"
                                   onClick={() => handleUpdateItem(cIdx, iIdx, 'isSubItem', !item.isSubItem)}
@@ -1753,6 +1901,30 @@ export default function QuoteEditor() {
                                   {formatCurrency(sellTotal)}
                                 </div>
                               </div>
+                            </div>
+
+                            {/* Mudar de posição — no telemóvel não há arrastar */}
+                            <div className="flex items-center gap-2">
+                              <button
+                                type="button"
+                                onClick={() => moverArtigo(cIdx, iIdx, -1)}
+                                disabled={iIdx === 0}
+                                className="h-11 flex-1 rounded-lg border border-gray-200 bg-white text-gray-500 flex items-center justify-center gap-1.5 text-xs font-semibold active:bg-gray-50 disabled:opacity-30"
+                                title="Mover para cima"
+                              >
+                                <ArrowUp className="w-4 h-4" />
+                                Subir
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => moverArtigo(cIdx, iIdx, 1)}
+                                disabled={iIdx === chap.items.length - 1}
+                                className="h-11 flex-1 rounded-lg border border-gray-200 bg-white text-gray-500 flex items-center justify-center gap-1.5 text-xs font-semibold active:bg-gray-50 disabled:opacity-30"
+                                title="Mover para baixo"
+                              >
+                                <ArrowDown className="w-4 h-4" />
+                                Descer
+                              </button>
                             </div>
 
                             <div className="flex items-center gap-2 pt-1">
