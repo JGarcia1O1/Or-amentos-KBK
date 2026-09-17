@@ -1,76 +1,83 @@
 import { supabase } from '@/lib/supabase';
-import { QuoteAdjudication, QuotePayment } from '@/types';
+import { QuoteSettlement } from '@/types';
 
 /**
- * Pagamentos de orçamentos adjudicados.
+ * Liquidação de orçamentos adjudicados: as duas metades de 50%.
  *
  * Porque é que isto não está dentro da tabela `quotes`:
  * um orçamento adjudicado está bloqueado para alterações na base de dados
- * (trigger trg_block_adjudicados). Qualquer tentativa de escrever o valor
- * pago dentro do orçamento falharia. Além disso são números financeiros,
- * de uso interno — não têm nada que ver com o documento que vai para o
- * cliente e nunca aparecem no PDF.
+ * (trigger trg_block_adjudicados). A única exceção aberta nesse trigger é a
+ * passagem de 'Adjudicado' para 'Realizado' — e nada mais. Tudo o resto que
+ * diz respeito a recebimentos vive em quote_settlements.
  *
- * Duas tabelas:
- *   quote_adjudications — o valor adjudicado (uma linha por orçamento)
- *   quote_payments      — cada recebimento (várias linhas por orçamento)
+ * Nada disto sai no PDF.
  */
 
-function mapAdjudication(row: any): QuoteAdjudication {
+function mapSettlement(row: any): QuoteSettlement {
   return {
     quoteId: row.quote_id,
     quoteNumber: row.quote_number ?? null,
-    amount: Number(row.amount) || 0,
+    subtotal: Number(row.subtotal) || 0,
+    vatAmount: Number(row.vat_amount) || 0,
+    total: Number(row.total) || 0,
+    firstPaidAt: row.first_paid_at ?? null,
+    secondPaidAt: row.second_paid_at ?? null,
+    settledAt: row.settled_at ?? null,
     updatedAt: row.updated_at ?? null,
     updatedBy: row.updated_by ?? null,
   };
 }
 
-function mapPayment(row: any): QuotePayment {
-  return {
-    id: row.id,
-    quoteId: row.quote_id,
-    quoteNumber: row.quote_number ?? null,
-    paidAt: row.paid_at,
-    amount: Number(row.amount) || 0,
-    description: row.description ?? null,
-    createdAt: row.created_at ?? null,
-    createdBy: row.created_by ?? null,
-  };
-}
-
-export const PaymentService = {
-  /** Valor adjudicado gravado. Devolve null se ainda ninguém o fixou. */
-  async getAdjudication(quoteId: string): Promise<QuoteAdjudication | null> {
+export const SettlementService = {
+  /** Liquidação gravada. null = ainda ninguém marcou nenhuma metade. */
+  async get(quoteId: string): Promise<QuoteSettlement | null> {
     const { data, error } = await supabase
-      .from('quote_adjudications')
+      .from('quote_settlements')
       .select('*')
       .eq('quote_id', quoteId)
       .maybeSingle();
 
     if (error) {
-      console.error('SUPABASE ERROR (quote_adjudications):', error);
+      console.error('SUPABASE ERROR (quote_settlements):', error);
       throw error;
     }
-    return data ? mapAdjudication(data) : null;
+    return data ? mapSettlement(data) : null;
   },
 
-  /** Fixa ou corrige o valor adjudicado. */
-  async saveAdjudication(
-    quoteId: string,
-    quoteNumber: string,
-    amount: number,
-    updatedBy: string
-  ): Promise<QuoteAdjudication> {
+  /**
+   * Marca ou desmarca uma das metades.
+   *
+   * Os valores (subtotal, IVA, total) são gravados de cada vez. Como o
+   * orçamento já está trancado na base de dados, não podem mudar — mas
+   * assim a linha fica auto-suficiente para consulta e relatórios.
+   */
+  async setHalf(entrada: {
+    quoteId: string;
+    quoteNumber: string;
+    subtotal: number;
+    vatAmount: number;
+    total: number;
+    firstPaidAt: string | null;
+    secondPaidAt: string | null;
+    updatedBy: string;
+  }): Promise<QuoteSettlement> {
+    const liquidado =
+      entrada.firstPaidAt !== null && entrada.secondPaidAt !== null;
+
     const { data, error } = await supabase
-      .from('quote_adjudications')
+      .from('quote_settlements')
       .upsert(
         {
-          quote_id: quoteId,
-          quote_number: quoteNumber,
-          amount,
+          quote_id: entrada.quoteId,
+          quote_number: entrada.quoteNumber,
+          subtotal: entrada.subtotal,
+          vat_amount: entrada.vatAmount,
+          total: entrada.total,
+          first_paid_at: entrada.firstPaidAt,
+          second_paid_at: entrada.secondPaidAt,
+          settled_at: liquidado ? new Date().toISOString() : null,
           updated_at: new Date().toISOString(),
-          updated_by: updatedBy,
+          updated_by: entrada.updatedBy,
         },
         { onConflict: 'quote_id' }
       )
@@ -78,88 +85,42 @@ export const PaymentService = {
       .single();
 
     if (error) {
-      console.error('SUPABASE ERROR (quote_adjudications):', error);
+      console.error('SUPABASE ERROR (quote_settlements):', error);
       throw error;
     }
-    return mapAdjudication(data);
-  },
-
-  /** Lançamentos do orçamento, do mais recente para o mais antigo. */
-  async getPayments(quoteId: string): Promise<QuotePayment[]> {
-    const { data, error } = await supabase
-      .from('quote_payments')
-      .select('*')
-      .eq('quote_id', quoteId)
-      .order('paid_at', { ascending: false })
-      .order('created_at', { ascending: false });
-
-    if (error) {
-      console.error('SUPABASE ERROR (quote_payments):', error);
-      throw error;
-    }
-    return (data || []).map(mapPayment);
-  },
-
-  /** Regista um recebimento. */
-  async addPayment(entrada: {
-    quoteId: string;
-    quoteNumber: string;
-    paidAt: string;
-    amount: number;
-    description?: string;
-    createdBy: string;
-  }): Promise<QuotePayment> {
-    const { data, error } = await supabase
-      .from('quote_payments')
-      .insert({
-        quote_id: entrada.quoteId,
-        quote_number: entrada.quoteNumber,
-        paid_at: entrada.paidAt,
-        amount: entrada.amount,
-        description: entrada.description || null,
-        created_by: entrada.createdBy,
-      })
-      .select()
-      .single();
-
-    if (error) {
-      console.error('SUPABASE ERROR (quote_payments):', error);
-      throw error;
-    }
-    return mapPayment(data);
-  },
-
-  /** Apaga um lançamento errado. Só a administração chega aqui. */
-  async deletePayment(id: string): Promise<void> {
-    const { error } = await supabase.from('quote_payments').delete().eq('id', id);
-    if (error) {
-      console.error('SUPABASE ERROR (quote_payments):', error);
-      throw error;
-    }
+    return mapSettlement(data);
   },
 
   /**
-   * Totais de vários orçamentos de uma vez, para listas.
-   * Devolve um mapa quoteId -> total já pago.
+   * Passa o orçamento de 'Adjudicado' a 'Realizado'.
+   *
+   * ATENÇÃO: tem de ser um update só à coluna status. O trigger
+   * trg_block_adjudicados abre exceção exclusivamente para esta transição e
+   * recusa-a se mais alguma coluna vier alterada. Não usar QuoteService.save
+   * aqui — esse grava a linha inteira e é recusado.
    */
-  async getPaidTotals(quoteIds: string[]): Promise<Record<string, number>> {
-    if (quoteIds.length === 0) return {};
-
-    const { data, error } = await supabase
-      .from('quote_payments')
-      .select('quote_id, amount')
-      .in('quote_id', quoteIds);
+  async marcarRealizado(quoteId: string): Promise<void> {
+    const { error } = await supabase
+      .from('quotes')
+      .update({ status: 'Realizado' })
+      .eq('id', quoteId);
 
     if (error) {
-      console.error('SUPABASE ERROR (quote_payments):', error);
-      return {};
+      console.error('SUPABASE ERROR (quotes -> Realizado):', error);
+      throw error;
     }
+  },
 
-    const totais: Record<string, number> = {};
-    (data || []).forEach((linha: any) => {
-      const valor = Number(linha.amount) || 0;
-      totais[linha.quote_id] = (totais[linha.quote_id] || 0) + valor;
-    });
-    return totais;
+  /** Volta a 'Adjudicado' quando se desmarca uma metade por engano. */
+  async reverterParaAdjudicado(quoteId: string): Promise<void> {
+    const { error } = await supabase
+      .from('quotes')
+      .update({ status: 'Adjudicado' })
+      .eq('id', quoteId);
+
+    if (error) {
+      console.error('SUPABASE ERROR (quotes -> Adjudicado):', error);
+      throw error;
+    }
   },
 };

@@ -695,6 +695,11 @@ export default function QuoteEditor() {
                 <option value="Rascunho">Rascunho</option>
                 <option value="Apresentado">Apresentado</option>
                 <option value="Adjudicado">Adjudicado (Aprovado)</option>
+                {/* Realizado não se escolhe à mão: é o software que o põe
+                    quando as duas metades ficam marcadas como pagas. */}
+                <option value="Realizado" disabled>
+                  Realizado (pago na totalidade)
+                </option>
                 <option value="Recusado">Recusado</option>
               </select>
             </div>
@@ -883,9 +888,10 @@ export default function QuoteEditor() {
       {/* 1.5. Recebimentos — só em orçamentos adjudicados e só para a
           administração. Painel interno: vive em tabelas próprias, não toca
           no orçamento e nunca aparece no PDF. */}
-      {isAdmin && quote.status === 'Adjudicado' && (
-        <QuotePaymentsPanel quote={quote} />
-      )}
+      {isAdmin &&
+        (quote.status === 'Adjudicado' || quote.status === 'Realizado') && (
+          <QuotePaymentsPanel quote={quote} />
+        )}
 
       {/* 2. Tabela Hierárquica de Capítulos & Artigos */}
       <div className="space-y-6">

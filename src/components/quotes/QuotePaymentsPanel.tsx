@@ -2,184 +2,164 @@
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
-import { Quote, QuotePayment } from '@/types';
-import { formatCurrency, calculateQuoteTotalWithVat } from '@/lib/calculator';
-import { PaymentService } from '@/services/paymentService';
+import { Quote, QuoteSettlement } from '@/types';
+import {
+  formatCurrency,
+  calculateQuoteSubtotal,
+  calculateQuoteVat,
+} from '@/lib/calculator';
+import { SettlementService } from '@/services/paymentService';
 import { useApp } from '@/context/AppContext';
-import { Lock, Plus, Trash2, Wallet, Check, Pencil } from 'lucide-react';
+import { Lock, Wallet, CheckCircle2 } from 'lucide-react';
 
 /**
- * Controlo de recebimentos de um orçamento adjudicado.
+ * Liquidação de um orçamento adjudicado.
  *
- * É um painel interno: nunca sai no PDF e só a administração o vê.
- * Escreve em tabelas próprias (quote_adjudications e quote_payments),
- * nunca no orçamento — um orçamento adjudicado está bloqueado para
- * alterações na base de dados.
+ * O cliente paga em duas metades iguais do total com IVA: 50% na adjudicação
+ * e 50% depois. Cada metade tem um visto e uma data. Quando as duas ficam
+ * marcadas, o orçamento passa sozinho a Realizado.
+ *
+ * Painel interno: só a administração o vê e nunca sai no PDF.
  */
 export default function QuotePaymentsPanel({ quote }: { quote: Quote }) {
-  const { currentUser, confirmAction } = useApp();
+  const { currentUser, setQuotes, setSelectedQuote } = useApp();
 
-  const totalOrcamento = useMemo(
-    () => calculateQuoteTotalWithVat(quote),
-    [quote]
-  );
+  const hoje = new Date().toISOString().slice(0, 10);
 
   const [carregando, setCarregando] = useState(true);
-  const [pagamentos, setPagamentos] = useState<QuotePayment[]>([]);
-
-  // Valor adjudicado: arranca no total da proposta, mas é corrigível.
-  const [adjudicado, setAdjudicado] = useState<number>(totalOrcamento);
-  const [adjudicadoGravado, setAdjudicadoGravado] = useState<number | null>(null);
-  const [editarAdjudicado, setEditarAdjudicado] = useState(false);
-  const [rascunhoAdjudicado, setRascunhoAdjudicado] = useState('');
-
-  // Formulário de novo lançamento
-  const hoje = new Date().toISOString().slice(0, 10);
-  const [novaData, setNovaData] = useState(hoje);
-  const [novoValor, setNovoValor] = useState('');
-  const [novaDescricao, setNovaDescricao] = useState('');
   const [aGravar, setAGravar] = useState(false);
+  const [registo, setRegisto] = useState<QuoteSettlement | null>(null);
+
+  // Datas em edição. Se a metade ainda não está marcada, guardam a data que
+  // será usada quando alguém carregar no visto.
+  const [data1, setData1] = useState(hoje);
+  const [data2, setData2] = useState(hoje);
+
+  // Valores calculados a partir do orçamento. Se já houver registo gravado,
+  // manda o registo — é a fotografia do momento em que se cobrou.
+  const calculado = useMemo(() => {
+    const subtotal = calculateQuoteSubtotal(quote);
+    const iva = calculateQuoteVat(quote);
+    return { subtotal, iva, total: subtotal + iva };
+  }, [quote]);
+
+  const subtotal = registo ? registo.subtotal : calculado.subtotal;
+  const iva = registo ? registo.vatAmount : calculado.iva;
+  const total = registo ? registo.total : calculado.total;
+  const metade = total / 2;
+
+  const pago1 = !!registo?.firstPaidAt;
+  const pago2 = !!registo?.secondPaidAt;
+  const recebido = (pago1 ? metade : 0) + (pago2 ? metade : 0);
+  const emFalta = total - recebido;
 
   const carregar = useCallback(async () => {
     setCarregando(true);
     try {
-      const [registo, linhas] = await Promise.all([
-        PaymentService.getAdjudication(quote.id),
-        PaymentService.getPayments(quote.id),
-      ]);
-      setPagamentos(linhas);
-      if (registo) {
-        setAdjudicado(registo.amount);
-        setAdjudicadoGravado(registo.amount);
-      } else {
-        setAdjudicado(totalOrcamento);
-        setAdjudicadoGravado(null);
-      }
+      const linha = await SettlementService.get(quote.id);
+      setRegisto(linha);
+      if (linha?.firstPaidAt) setData1(linha.firstPaidAt);
+      if (linha?.secondPaidAt) setData2(linha.secondPaidAt);
     } catch {
-      toast.error('Não foi possível ler os pagamentos deste orçamento.');
+      toast.error('Não foi possível ler o estado dos pagamentos.');
     } finally {
       setCarregando(false);
     }
-  }, [quote.id, totalOrcamento]);
+  }, [quote.id]);
 
   useEffect(() => {
     carregar();
   }, [carregar]);
 
-  const pago = useMemo(
-    () => pagamentos.reduce((soma, p) => soma + (p.amount || 0), 0),
-    [pagamentos]
-  );
-  const falta = adjudicado - pago;
-  const percentagem =
-    adjudicado > 0 ? Math.min(100, Math.round((pago / adjudicado) * 100)) : 0;
-
-  /* ---------------- Valor adjudicado ---------------- */
-
-  const abrirEdicaoAdjudicado = () => {
-    setRascunhoAdjudicado(String(adjudicado.toFixed(2)));
-    setEditarAdjudicado(true);
+  /** Atualiza o estado do orçamento em memória, sem gravar a linha inteira. */
+  const refletirEstado = (novoEstado: Quote['status']) => {
+    setQuotes(prev =>
+      prev.map(q => (q.id === quote.id ? { ...q, status: novoEstado } : q))
+    );
+    setSelectedQuote({ ...quote, status: novoEstado });
   };
 
-  const gravarAdjudicado = async () => {
-    const valor = Number(String(rascunhoAdjudicado).replace(',', '.'));
-    if (!isFinite(valor) || valor < 0) {
-      toast.error('Indica um valor adjudicado válido.');
-      return;
-    }
-    try {
-      await PaymentService.saveAdjudication(
-        quote.id,
-        quote.number,
-        valor,
-        currentUser
-      );
-      setAdjudicado(valor);
-      setAdjudicadoGravado(valor);
-      setEditarAdjudicado(false);
-      toast.success('Valor adjudicado atualizado.');
-    } catch {
-      toast.error('Não foi possível gravar o valor adjudicado.');
-    }
-  };
-
-  /* ---------------- Lançamentos ---------------- */
-
-  const registarPagamento = async () => {
-    const valor = Number(String(novoValor).replace(',', '.'));
-    if (!isFinite(valor) || valor === 0) {
-      toast.error('Indica o valor recebido.');
-      return;
-    }
-    if (!novaData) {
-      toast.error('Indica a data do recebimento.');
-      return;
-    }
-
+  /**
+   * Grava as duas metades e, se for caso disso, muda o estado do orçamento.
+   * primeira/segunda: data em texto, ou null para "ainda não recebido".
+   */
+  const gravar = async (primeira: string | null, segunda: string | null) => {
     setAGravar(true);
     try {
-      // Se o valor adjudicado ainda nunca foi fixado, fixa-se agora com o
-      // total da proposta. Sem isto, o "falta pagar" ficava dependente de
-      // um total que muda sempre que alguém mexe num artigo.
-      if (adjudicadoGravado === null) {
-        await PaymentService.saveAdjudication(
-          quote.id,
-          quote.number,
-          adjudicado,
-          currentUser
-        );
-        setAdjudicadoGravado(adjudicado);
-      }
-
-      const linha = await PaymentService.addPayment({
+      const linha = await SettlementService.setHalf({
         quoteId: quote.id,
         quoteNumber: quote.number,
-        paidAt: novaData,
-        amount: valor,
-        description: novaDescricao.trim() || undefined,
-        createdBy: currentUser,
+        subtotal: calculado.subtotal,
+        vatAmount: calculado.iva,
+        total: calculado.total,
+        firstPaidAt: primeira,
+        secondPaidAt: segunda,
+        updatedBy: currentUser,
       });
+      setRegisto(linha);
 
-      setPagamentos(prev => [linha, ...prev]);
-      setNovoValor('');
-      setNovaDescricao('');
-      setNovaData(hoje);
-      toast.success('Recebimento registado.');
-    } catch {
-      toast.error('Não foi possível registar o recebimento.');
+      const liquidado = primeira !== null && segunda !== null;
+
+      if (liquidado && quote.status !== 'Realizado') {
+        await SettlementService.marcarRealizado(quote.id);
+        refletirEstado('Realizado');
+        toast.success('Pago na totalidade. O orçamento passou a Realizado.');
+        return;
+      }
+
+      if (!liquidado && quote.status === 'Realizado') {
+        await SettlementService.reverterParaAdjudicado(quote.id);
+        refletirEstado('Adjudicado');
+        toast.success('Pagamento desmarcado. O orçamento voltou a Adjudicado.');
+        return;
+      }
+
+      toast.success('Pagamento atualizado.');
+    } catch (e: any) {
+      const mensagem = String(e?.message || e);
+      if (mensagem.includes('trancado') || mensagem.includes('SEGURANÇA')) {
+        toast.error(
+          'A base de dados recusou a mudança de estado. Falta correr o SQL que abre a exceção Adjudicado → Realizado.'
+        );
+      } else {
+        toast.error('Não foi possível gravar o pagamento.');
+      }
+      // Volta a ler para o ecrã não ficar a mostrar algo que não gravou.
+      carregar();
     } finally {
       setAGravar(false);
     }
   };
 
-  const apagarPagamento = (linha: QuotePayment) => {
-    confirmAction(
-      'Apagar lançamento',
-      `Apagar o recebimento de ${formatCurrency(linha.amount)} de ${formatarData(
-        linha.paidAt
-      )}? Esta ação não se desfaz.`,
-      async () => {
-        try {
-          await PaymentService.deletePayment(linha.id);
-          setPagamentos(prev => prev.filter(p => p.id !== linha.id));
-          toast.success('Lançamento apagado.');
-        } catch {
-          toast.error('Não foi possível apagar o lançamento.');
-        }
-      }
-    );
+  const alternarPrimeira = () =>
+    gravar(pago1 ? null : data1, registo?.secondPaidAt ?? null);
+
+  const alternarSegunda = () =>
+    gravar(registo?.firstPaidAt ?? null, pago2 ? null : data2);
+
+  /** Mudar a data de uma metade já marcada regrava-a com a data nova. */
+  const mudarData1 = (valor: string) => {
+    setData1(valor);
+    if (pago1) gravar(valor, registo?.secondPaidAt ?? null);
   };
 
-  /* ---------------- Render ---------------- */
+  const mudarData2 = (valor: string) => {
+    setData2(valor);
+    if (pago2) gravar(registo?.firstPaidAt ?? null, valor);
+  };
 
   return (
     <div className="bg-white rounded-2xl border border-gray-200 shadow-xs overflow-hidden">
       <div className="bg-gray-100/70 px-4 py-3 border-b border-gray-200 flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           <Wallet className="w-4 h-4 text-gray-500" />
-          <h3 className="text-sm font-bold text-gray-900">
-            Controlo de Recebimentos
-          </h3>
+          <h3 className="text-sm font-bold text-gray-900">Pagamento</h3>
+          {pago1 && pago2 && (
+            <span className="flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded border bg-emerald-50 text-emerald-700 border-emerald-200">
+              <CheckCircle2 className="w-3 h-3" />
+              Realizado
+            </span>
+          )}
         </div>
         <span className="flex items-center gap-1.5 text-[10px] font-bold text-gray-400 uppercase tracking-wider">
           <Lock className="w-3 h-3" />
@@ -188,243 +168,159 @@ export default function QuotePaymentsPanel({ quote }: { quote: Quote }) {
       </div>
 
       <div className="p-4 space-y-4">
-        {/* Totais */}
+        {/* De onde vem a conta */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <div className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-3">
-            <div className="flex items-center justify-between gap-2 mb-1">
-              <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">
-                Adjudicado
-              </span>
-              {!editarAdjudicado && (
-                <button
-                  type="button"
-                  onClick={abrirEdicaoAdjudicado}
-                  title="Corrigir o valor adjudicado"
-                  className="text-gray-400 hover:text-gray-900 transition"
-                >
-                  <Pencil className="w-3 h-3" />
-                </button>
-              )}
+            <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">
+              Subtotal Venda
             </div>
-
-            {editarAdjudicado ? (
-              <div className="flex items-center gap-1">
-                <input
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  autoFocus
-                  value={rascunhoAdjudicado}
-                  onFocus={e => e.target.select()}
-                  onChange={e => setRascunhoAdjudicado(e.target.value)}
-                  onKeyDown={e => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault();
-                      gravarAdjudicado();
-                    }
-                    if (e.key === 'Escape') setEditarAdjudicado(false);
-                  }}
-                  className="w-28 text-sm font-mono font-bold bg-white border border-gray-300 rounded-lg px-2 py-1 outline-none"
-                />
-                <button
-                  type="button"
-                  onClick={gravarAdjudicado}
-                  title="Gravar"
-                  className="p-1.5 bg-gray-900 hover:bg-black text-white rounded-lg transition"
-                >
-                  <Check className="w-3.5 h-3.5" />
-                </button>
-              </div>
-            ) : (
-              <>
-                <div className="text-lg font-bold text-gray-900 num-tabular">
-                  {formatCurrency(adjudicado)}
-                </div>
-                {adjudicadoGravado === null && (
-                  <div className="text-[10px] text-gray-400 mt-0.5">
-                    Assumido do total da proposta
-                  </div>
-                )}
-              </>
-            )}
+            <div className="text-base font-bold text-gray-900 num-tabular">
+              {formatCurrency(subtotal)}
+            </div>
           </div>
-
           <div className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-3">
             <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">
-              Já pago
+              IVA (23%)
             </div>
-            <div className="text-lg font-bold text-emerald-700 num-tabular">
-              {formatCurrency(pago)}
+            <div className="text-base font-bold text-gray-900 num-tabular">
+              {formatCurrency(iva)}
             </div>
           </div>
-
-          <div className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-3">
+          <div className="bg-black text-white rounded-xl px-4 py-3">
             <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">
-              Falta pagar
+              Total com IVA
             </div>
-            <div
-              className={`text-lg font-bold num-tabular ${
-                Math.abs(falta) < 0.005
-                  ? 'text-emerald-700'
-                  : falta < 0
-                  ? 'text-amber-700'
-                  : 'text-gray-900'
-              }`}
-            >
-              {formatCurrency(falta)}
+            <div className="text-base font-bold num-tabular">
+              {formatCurrency(total)}
             </div>
-            {falta < -0.005 && (
-              <div className="text-[10px] text-amber-700 mt-0.5">
-                Recebido a mais
-              </div>
-            )}
           </div>
         </div>
 
-        {/* Barra de progresso */}
-        <div>
-          <div className="h-2 w-full bg-gray-100 rounded-full overflow-hidden">
-            <div
-              className="h-full bg-gray-900 rounded-full transition-all"
-              style={{ width: `${percentagem}%` }}
-            />
-          </div>
-          <div className="text-[10px] text-gray-400 mt-1 font-medium">
-            {percentagem}% recebido
-          </div>
-        </div>
-
-        {/* Novo lançamento */}
-        <div className="grid grid-cols-1 sm:grid-cols-12 gap-2 items-end pt-1">
-          <div className="sm:col-span-3">
-            <label className="block text-[10px] text-gray-500 font-bold mb-1 uppercase tracking-wider">
-              Data
-            </label>
-            <input
-              type="date"
-              value={novaData}
-              onChange={e => setNovaData(e.target.value)}
-              className="w-full bg-gray-50 border border-gray-200 rounded-lg p-2 text-xs outline-none font-mono"
-            />
-          </div>
-          <div className="sm:col-span-3">
-            <label className="block text-[10px] text-gray-500 font-bold mb-1 uppercase tracking-wider">
-              Valor recebido
-            </label>
-            <input
-              type="number"
-              step="0.01"
-              value={novoValor}
-              placeholder="0,00"
-              onChange={e => setNovoValor(e.target.value)}
-              onKeyDown={e => {
-                if (e.key === 'Enter') {
-                  e.preventDefault();
-                  registarPagamento();
-                }
-              }}
-              className="w-full bg-gray-50 border border-gray-200 rounded-lg p-2 text-xs outline-none font-mono"
-            />
-          </div>
-          <div className="sm:col-span-4">
-            <label className="block text-[10px] text-gray-500 font-bold mb-1 uppercase tracking-wider">
-              Descrição (opcional)
-            </label>
-            <input
-              type="text"
-              value={novaDescricao}
-              placeholder="Ex: sinal, 2.ª tranche, entrega"
-              onChange={e => setNovaDescricao(e.target.value)}
-              onKeyDown={e => {
-                if (e.key === 'Enter') {
-                  e.preventDefault();
-                  registarPagamento();
-                }
-              }}
-              className="w-full bg-gray-50 border border-gray-200 rounded-lg p-2 text-xs outline-none"
-            />
-          </div>
-          <div className="sm:col-span-2">
-            <button
-              type="button"
-              onClick={registarPagamento}
-              disabled={aGravar}
-              className="w-full flex items-center justify-center gap-1.5 px-3 py-2 bg-black text-white rounded-lg hover:bg-gray-800 disabled:opacity-50 text-xs font-semibold transition"
-            >
-              <Plus className="w-3.5 h-3.5" />
-              Registar
-            </button>
-          </div>
-        </div>
-
-        {/* Lista de lançamentos */}
+        {/* As duas metades */}
         {carregando ? (
-          <div className="text-xs text-gray-400 py-4 text-center">
-            A carregar recebimentos...
-          </div>
-        ) : pagamentos.length === 0 ? (
-          <div className="text-xs text-gray-400 py-4 text-center border border-dashed border-gray-200 rounded-xl">
-            Ainda não há recebimentos registados.
+          <div className="text-xs text-gray-400 py-6 text-center">
+            A carregar...
           </div>
         ) : (
-          <div className="border border-gray-200 rounded-xl overflow-hidden">
-            <table className="w-full text-left text-xs num-tabular">
-              <thead className="bg-gray-50 text-gray-500">
-                <tr>
-                  <th className="px-3 py-2 font-bold uppercase tracking-wider text-[10px] w-28">
-                    Data
-                  </th>
-                  <th className="px-3 py-2 font-bold uppercase tracking-wider text-[10px]">
-                    Descrição
-                  </th>
-                  <th className="px-3 py-2 font-bold uppercase tracking-wider text-[10px] text-right w-32">
-                    Valor
-                  </th>
-                  <th className="px-3 py-2 w-10" />
-                </tr>
-              </thead>
-              <tbody>
-                {pagamentos.map(p => (
-                  <tr key={p.id} className="border-t border-gray-100">
-                    <td className="px-3 py-2 font-mono text-gray-600">
-                      {formatarData(p.paidAt)}
-                    </td>
-                    <td className="px-3 py-2 text-gray-700">
-                      {p.description || <span className="text-gray-300">—</span>}
-                      {p.createdBy && (
-                        <span className="text-[10px] text-gray-400 ml-2">
-                          {p.createdBy}
-                        </span>
-                      )}
-                    </td>
-                    <td className="px-3 py-2 text-right font-bold text-gray-900">
-                      {formatCurrency(p.amount)}
-                    </td>
-                    <td className="px-3 py-2 text-right">
-                      <button
-                        type="button"
-                        onClick={() => apagarPagamento(p)}
-                        title="Apagar lançamento"
-                        className="text-gray-300 hover:text-red-600 transition"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <MetadeBox
+              titulo="1.ª metade · 50%"
+              legenda="Na adjudicação"
+              valor={metade}
+              pago={pago1}
+              data={data1}
+              bloqueado={aGravar}
+              onAlternar={alternarPrimeira}
+              onMudarData={mudarData1}
+            />
+            <MetadeBox
+              titulo="2.ª metade · 50%"
+              legenda="Restante"
+              valor={metade}
+              pago={pago2}
+              data={data2}
+              bloqueado={aGravar}
+              onAlternar={alternarSegunda}
+              onMudarData={mudarData2}
+            />
           </div>
         )}
+
+        {/* Resumo */}
+        <div className="flex items-center justify-between gap-3 pt-1 text-xs">
+          <span className="text-gray-400 font-medium">
+            Recebido{' '}
+            <span className="font-bold text-emerald-700 num-tabular">
+              {formatCurrency(recebido)}
+            </span>
+          </span>
+          <span className="text-gray-400 font-medium">
+            Em falta{' '}
+            <span
+              className={`font-bold num-tabular ${
+                emFalta < 0.005 ? 'text-emerald-700' : 'text-gray-900'
+              }`}
+            >
+              {formatCurrency(emFalta)}
+            </span>
+          </span>
+        </div>
       </div>
     </div>
   );
 }
 
-/** '2026-09-17' -> '17/09/2026' */
-function formatarData(iso: string): string {
-  if (!iso) return '';
-  const partes = String(iso).slice(0, 10).split('-');
-  if (partes.length !== 3) return iso;
-  return `${partes[2]}/${partes[1]}/${partes[0]}`;
+/* ---------------------------------------------------------------- */
+
+function MetadeBox({
+  titulo,
+  legenda,
+  valor,
+  pago,
+  data,
+  bloqueado,
+  onAlternar,
+  onMudarData,
+}: {
+  titulo: string;
+  legenda: string;
+  valor: number;
+  pago: boolean;
+  data: string;
+  bloqueado: boolean;
+  onAlternar: () => void;
+  onMudarData: (valor: string) => void;
+}) {
+  return (
+    <div
+      className={`rounded-xl border px-4 py-3 transition ${
+        pago
+          ? 'bg-emerald-50/60 border-emerald-200'
+          : 'bg-gray-50 border-gray-200'
+      }`}
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">
+            {titulo}
+          </div>
+          <div className="text-lg font-bold text-gray-900 num-tabular mt-0.5">
+            {formatCurrency(valor)}
+          </div>
+          <div className="text-[10px] text-gray-400 mt-0.5">{legenda}</div>
+        </div>
+
+        <label
+          className={`shrink-0 flex items-center gap-2 text-xs font-semibold select-none ${
+            bloqueado ? 'opacity-50' : 'cursor-pointer'
+          }`}
+          title={pago ? 'Desmarcar como pago' : 'Marcar como pago'}
+        >
+          <input
+            type="checkbox"
+            checked={pago}
+            disabled={bloqueado}
+            onChange={onAlternar}
+            className="w-4 h-4 rounded border-gray-300 text-gray-900 focus:ring-0 cursor-pointer"
+          />
+          <span className={pago ? 'text-emerald-700' : 'text-gray-500'}>
+            Pago
+          </span>
+        </label>
+      </div>
+
+      <div className="mt-3">
+        <label className="block text-[10px] text-gray-500 font-bold mb-1 uppercase tracking-wider">
+          Data do pagamento
+        </label>
+        <input
+          type="date"
+          value={data}
+          disabled={bloqueado}
+          onChange={e => onMudarData(e.target.value)}
+          className="w-full bg-white border border-gray-200 rounded-lg p-2 text-xs outline-none font-mono disabled:opacity-50"
+        />
+      </div>
+    </div>
+  );
 }

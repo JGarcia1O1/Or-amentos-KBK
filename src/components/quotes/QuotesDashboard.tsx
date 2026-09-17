@@ -186,7 +186,7 @@ export default function QuotesDashboard() {
         <div className="flex items-center gap-2 min-w-0">
           {/* Tira deslizante no telemóvel, para os cinco estados caberem */}
           <div className="flex items-center gap-1 bg-gray-100 p-1 rounded-lg overflow-x-auto scroll-limpo flex-1 lg:flex-none">
-            {['Todos', 'Apresentado', 'Adjudicado', 'Rascunho', 'Recusado'].map(st => (
+            {['Todos', 'Apresentado', 'Adjudicado', 'Realizado', 'Rascunho', 'Recusado'].map(st => (
               <button
                 key={st}
                 type="button"
@@ -310,7 +310,9 @@ export default function QuotesDashboard() {
                         </span>
                         <span
                           className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
-                            q.status === 'Adjudicado'
+                            q.status === 'Realizado'
+                              ? 'bg-gray-900 text-white border-gray-900'
+                              : q.status === 'Adjudicado'
                               ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
                               : q.status === 'Apresentado'
                               ? 'bg-blue-50 text-blue-700 border-blue-200'
@@ -475,7 +477,9 @@ export default function QuotesDashboard() {
                       <td className="py-3 px-4 text-center whitespace-nowrap">
                         <span
                           className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${
-                            q.status === 'Adjudicado'
+                            q.status === 'Realizado'
+                              ? 'bg-gray-900 text-white border-gray-900'
+                              : q.status === 'Adjudicado'
                               ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
                               : q.status === 'Apresentado'
                               ? 'bg-blue-50 text-blue-700 border-blue-200'

@@ -1,4 +1,11 @@
-export type QuoteStatus = 'Rascunho' | 'Apresentado' | 'Adjudicado' | 'Recusado';
+// 'Realizado' = adjudicado E integralmente pago. O software passa-o a este
+// estado sozinho quando as duas metades ficam marcadas como recebidas.
+export type QuoteStatus =
+  | 'Rascunho'
+  | 'Apresentado'
+  | 'Adjudicado'
+  | 'Realizado'
+  | 'Recusado';
 
 export type UserRole = 'admin' | 'gestor' | 'trabalhador';
 
@@ -244,33 +251,32 @@ export interface Quote {
 }
 
 /* ==========================================================
-   PAGAMENTOS DE ORÇAMENTOS ADJUDICADOS (uso interno)
-   Vivem em tabelas próprias (quote_adjudications e quote_payments)
-   e nunca dentro de `quotes`. Duas razões: um orçamento adjudicado
-   está bloqueado para alterações na base de dados, e estes valores
-   são financeiros — não devem passar pelo mesmo caminho do
-   documento que vai para o cliente. Nada disto sai no PDF.
+   LIQUIDAÇÃO DE ORÇAMENTOS ADJUDICADOS (uso interno)
+   Vive em tabela própria (quote_settlements) e nunca dentro de
+   `quotes`. Duas razões: um orçamento adjudicado está bloqueado para
+   alterações na base de dados, e estes valores são financeiros — não
+   devem passar pelo mesmo caminho do documento que vai para o
+   cliente. Nada disto sai no PDF.
    ========================================================== */
 
-/** Valor que o cliente efetivamente adjudicou. Um por orçamento. */
-export interface QuoteAdjudication {
+/**
+ * Liquidação de um orçamento adjudicado. Uma linha por orçamento.
+ *
+ * O pagamento é sempre em duas metades iguais do total com IVA: 50% na
+ * adjudicação e 50% depois. Os valores são gravados como fotografia no
+ * momento em que a primeira metade é marcada, para o histórico não mudar.
+ */
+export interface QuoteSettlement {
   quoteId: string;
   quoteNumber?: string | null;
-  amount: number;
+  subtotal: number;        // venda sem IVA
+  vatAmount: number;       // IVA
+  total: number;           // subtotal + IVA — é isto que se divide por 2
+  firstPaidAt?: string | null;   // 'YYYY-MM-DD' ou null se ainda não recebido
+  secondPaidAt?: string | null;
+  settledAt?: string | null;     // preenchido quando as duas metades estão pagas
   updatedAt?: string | null;
   updatedBy?: string | null;
-}
-
-/** Cada recebimento lançado à mão pela administração. */
-export interface QuotePayment {
-  id: string;
-  quoteId: string;
-  quoteNumber?: string | null;
-  paidAt: string;      // 'YYYY-MM-DD'
-  amount: number;
-  description?: string | null;
-  createdAt?: string | null;
-  createdBy?: string | null;
 }
 
 export interface CompanyInfo {
