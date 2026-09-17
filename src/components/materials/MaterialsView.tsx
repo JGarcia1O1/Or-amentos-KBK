@@ -359,7 +359,11 @@ export default function MaterialsView() {
                   </div>
 
                   <div className="mt-2 font-mono text-[11px] text-gray-400 flex items-center gap-2 flex-wrap">
-                    <span>{m.unit || 'UN'}</span>
+                    <span>
+                      {m.length && m.width
+                        ? `${m.length} × ${m.width}${m.thickness ? ` × ${m.thickness}` : ''}`
+                        : m.unit || 'UN'}
+                    </span>
                     <span>·</span>
                     <span>Armazém {m.warehouse || 1}</span>
                     <span>·</span>
@@ -412,7 +416,7 @@ export default function MaterialsView() {
                 <tr>
                   <th className="py-3.5 px-4">Ref.</th>
                   <th className="py-3.5 px-4">Designação da Chapa</th>
-                  <th className="py-3.5 px-4 text-center">Unidade</th>
+                  <th className="py-3.5 px-4 text-center">Medidas (mm)</th>
                   <th className="py-3.5 px-4 text-center">Armazém</th>
                   <th className="py-3.5 px-4 text-center">Quantidade</th>
                   <th className="py-3.5 px-4 text-right font-bold text-gray-900">
@@ -433,8 +437,18 @@ export default function MaterialsView() {
                     <td className="py-3.5 px-4 font-semibold text-gray-900">
                       {m.name}
                     </td>
+                    {/* Medidas da chapa. Quem não tem medidas — ferragens,
+                        orlas, artigos ao metro — mostra a unidade em cinzento
+                        claro, para a coluna nunca ficar vazia. */}
                     <td className="py-3.5 px-4 text-center font-mono text-gray-600">
-                      {m.unit || 'UN'}
+                      {m.length && m.width ? (
+                        <>
+                          {m.length} × {m.width}
+                          {m.thickness ? ` × ${m.thickness}` : ''}
+                        </>
+                      ) : (
+                        <span className="text-gray-300">{m.unit || 'UN'}</span>
+                      )}
                     </td>
                     <td className="py-3.5 px-4 text-center font-mono text-gray-600">
                       {m.warehouse || 1}
