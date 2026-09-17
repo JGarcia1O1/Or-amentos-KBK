@@ -243,6 +243,36 @@ export interface Quote {
   deletedAt?: string | null;
 }
 
+/* ==========================================================
+   PAGAMENTOS DE ORÇAMENTOS ADJUDICADOS (uso interno)
+   Vivem em tabelas próprias (quote_adjudications e quote_payments)
+   e nunca dentro de `quotes`. Duas razões: um orçamento adjudicado
+   está bloqueado para alterações na base de dados, e estes valores
+   são financeiros — não devem passar pelo mesmo caminho do
+   documento que vai para o cliente. Nada disto sai no PDF.
+   ========================================================== */
+
+/** Valor que o cliente efetivamente adjudicou. Um por orçamento. */
+export interface QuoteAdjudication {
+  quoteId: string;
+  quoteNumber?: string | null;
+  amount: number;
+  updatedAt?: string | null;
+  updatedBy?: string | null;
+}
+
+/** Cada recebimento lançado à mão pela administração. */
+export interface QuotePayment {
+  id: string;
+  quoteId: string;
+  quoteNumber?: string | null;
+  paidAt: string;      // 'YYYY-MM-DD'
+  amount: number;
+  description?: string | null;
+  createdAt?: string | null;
+  createdBy?: string | null;
+}
+
 export interface CompanyInfo {
   name: string;
   legalName: string;

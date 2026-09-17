@@ -21,6 +21,7 @@ import {
   calculateQuoteMarginPercent,
 } from '@/lib/calculator';
 import TechnicalCalculatorModal from './TechnicalCalculatorModal';
+import QuotePaymentsPanel from './QuotePaymentsPanel';
 import { SearchableMaterialDropdown } from '@/components/ui/SearchableMaterialDropdown';
 import {
   ArrowLeft,
@@ -58,6 +59,7 @@ export default function QuoteEditor() {
     edges,
     openPdfPreview,
     hideInternal,
+    isAdmin,
   } = useApp();
 
   // Itens expandidos para o painel de fabrico automático
@@ -877,6 +879,13 @@ export default function QuoteEditor() {
           </div>
         </div>
       </div>
+
+      {/* 1.5. Recebimentos — só em orçamentos adjudicados e só para a
+          administração. Painel interno: vive em tabelas próprias, não toca
+          no orçamento e nunca aparece no PDF. */}
+      {isAdmin && quote.status === 'Adjudicado' && (
+        <QuotePaymentsPanel quote={quote} />
+      )}
 
       {/* 2. Tabela Hierárquica de Capítulos & Artigos */}
       <div className="space-y-6">
