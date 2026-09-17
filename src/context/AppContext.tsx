@@ -120,7 +120,7 @@ interface AppContextType {
   setQuotes: React.Dispatch<React.SetStateAction<Quote[]>>;
   selectedQuote: Quote | null;
   setSelectedQuote: (quote: Quote | null) => void;
-  createNewQuote: (type?: 'manual' | 'automatic', customChapters?: QuoteChapter[]) => Quote;
+  createNewQuote: (type?: 'manual' | 'automatic', customChapters?: QuoteChapter[]) => Promise<Quote>;
   editQuote: (quote: Quote) => void;
   updateSelectedQuote: (quote: Quote) => void;
   duplicateQuote: (quote: Quote) => void;
@@ -1031,7 +1031,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   // A sequência recomeça em cada mês e nunca reaproveita um número:
   // parte do maior que já existe nesse mês, não da contagem de linhas.
   // ============================================================
-  const proximoNumeroOrcamento = (): string => {
+  // numerosFrescos: a lista lida à base de dados no instante em que se cria
+  // o orçamento. É o que impede dois documentos com o mesmo número quando
+  // duas pessoas estão a criar ao mesmo tempo, ou quando o separador já
+  // estava aberto há algum tempo e a lista local ficou desatualizada.
+  const proximoNumeroOrcamento = (numerosFrescos: string[] = []): string => {
     const agora = new Date();
     const ano = agora.getFullYear();
     const mes = agora.getMonth() + 1;
@@ -1045,6 +1049,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     const numeros = [
       ...quotes.map(q => q.number),
       ...numerosUsados,
+      ...numerosFrescos,
     ];
 
     let maiorSeq = 0;
@@ -1065,11 +1070,21 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   // customChapters: usado pelo Configurador, que já traz os capítulos e
   // artigos montados a partir das receitas. Sem isso, mantém-se o
   // comportamento de sempre (capítulos vazios e um artigo de exemplo).
-  const createNewQuote = (
+  const createNewQuote = async (
     type: 'manual' | 'automatic' = 'manual',
     customChapters?: QuoteChapter[]
-  ): Quote => {
-    const nextNum = proximoNumeroOrcamento();
+  ): Promise<Quote> => {
+    // O número é decidido com a lista lida agora à base de dados, não com a
+    // que estava em memória. Se a leitura falhar, usa-se a lista local —
+    // é melhor arriscar um número repetido do que impedir a criação.
+    let frescos: string[] = [];
+    try {
+      frescos = await QuoteService.getUsedNumbers();
+      if (frescos.length > 0) setNumerosUsados(frescos);
+    } catch {
+      /* sem rede: segue com o que há em memória */
+    }
+    const nextNum = proximoNumeroOrcamento(frescos);
 
     const defaultClient = clients[0] || {
       name: 'Cliente Exemplo',
@@ -1150,8 +1165,31 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     
     QuoteService.save(newQuote)
       .then(() => toast.success('Orçamento criado'))
-      .catch((e) => toast.error('Erro Supabase: ' + (e.message || e.toString())));
-      
+      .catch(async (e) => {
+        const mensagem = String(e?.message || e);
+
+        // Alguém apanhou este número entre a leitura e a gravação. Em vez de
+        // falhar e deixar o orçamento por gravar, atribui-se o número livre
+        // seguinte e avisa-se, para ninguém ficar sem saber que mudou.
+        if (mensagem.includes('duplicate key') || mensagem.includes('quotes_number_key')) {
+          try {
+            const outros = await QuoteService.getUsedNumbers();
+            setNumerosUsados(outros);
+            const corrigido = { ...newQuote, number: proximoNumeroOrcamento(outros) };
+            await QuoteService.save(corrigido);
+            setQuotes(prev => prev.map(q => (q.id === corrigido.id ? corrigido : q)));
+            setSelectedQuote(prev => (prev?.id === corrigido.id ? corrigido : prev));
+            toast.success(`Orçamento criado com o número ${corrigido.number}`);
+            return;
+          } catch (erro2) {
+            toast.error('Não foi possível atribuir um número livre. Tente novamente.');
+            return;
+          }
+        }
+
+        toast.error('Erro Supabase: ' + mensagem);
+      });
+
     return newQuote;
   };
 
@@ -1168,10 +1206,18 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     debouncedSaveQuote(timeStamped);
   };
 
-  const duplicateQuote = (quote: Quote) => {
+  const duplicateQuote = async (quote: Quote) => {
     // Usa a mesma numeração dos orçamentos novos. Antes usava o número de
     // linhas da lista, o que gerava números fora do formato e repetidos.
-    const nextNum = proximoNumeroOrcamento();
+    // Tal como na criação, os números são lidos à base de dados no momento.
+    let frescos: string[] = [];
+    try {
+      frescos = await QuoteService.getUsedNumbers();
+      if (frescos.length > 0) setNumerosUsados(frescos);
+    } catch {
+      /* sem rede: segue com o que há em memória */
+    }
+    const nextNum = proximoNumeroOrcamento(frescos);
     const duplicated: Quote = {
       ...JSON.parse(JSON.stringify(quote)),
       id: `q-${Date.now()}`,
@@ -1188,7 +1234,25 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     
     QuoteService.save(duplicated)
       .then(() => toast.success('Orçamento duplicado'))
-      .catch(() => toast.error('Erro ao duplicar orçamento'));
+      .catch(async (e) => {
+        const mensagem = String(e?.message || e);
+        if (mensagem.includes('duplicate key') || mensagem.includes('quotes_number_key')) {
+          try {
+            const outros = await QuoteService.getUsedNumbers();
+            setNumerosUsados(outros);
+            const corrigido = { ...duplicated, number: proximoNumeroOrcamento(outros) };
+            await QuoteService.save(corrigido);
+            setQuotes(prev => prev.map(q => (q.id === corrigido.id ? corrigido : q)));
+            setSelectedQuote(prev => (prev?.id === corrigido.id ? corrigido : prev));
+            toast.success(`Orçamento duplicado com o número ${corrigido.number}`);
+            return;
+          } catch {
+            toast.error('Não foi possível atribuir um número livre. Tente novamente.');
+            return;
+          }
+        }
+        toast.error('Erro ao duplicar orçamento');
+      });
   };
 
   // Eliminar deixou de apagar: o orçamento vai para a papeleira e fica
