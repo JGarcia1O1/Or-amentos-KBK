@@ -82,7 +82,9 @@ export default function QuoteEditor() {
   // sempre, não se conseguia selecionar texto dentro dos campos da linha.
   const [linhaArrastavel, setLinhaArrastavel] = useState<string | null>(null);
   const [aArrastar, setAArrastar] = useState<{ cIdx: number; iIdx: number } | null>(null);
-  const [linhaAlvo, setLinhaAlvo] = useState<string | null>(null);
+  // Guarda também de que lado da linha está o cursor, para desenhar o traço
+  // por cima ou por baixo e o utilizador ver onde é que aquilo vai cair.
+  const [linhaAlvo, setLinhaAlvo] = useState<{ id: string; acima: boolean } | null>(null);
 
   // Barra de rentabilidade no telemóvel: fechada mostra só o total
   const [rentabilidadeAberta, setRentabilidadeAberta] = useState(false);
@@ -451,17 +453,35 @@ export default function QuoteEditor() {
     updateSelectedQuote({ ...quote, chapters: newChapters });
   };
 
-  /** Largar um artigo em cima de outro (arrastar no computador). */
-  const reordenarArtigo = (chapterIndex: number, de: number, para: number) => {
+  /**
+   * Largar um artigo em cima de outro (arrastar no computador).
+   * `acima` diz se o cursor estava na metade de cima da linha de destino —
+   * é isso que decide se entra antes ou depois dela.
+   */
+  const reordenarArtigo = (
+    chapterIndex: number,
+    de: number,
+    para: number,
+    acima: boolean
+  ) => {
     const items = [...quote.chapters[chapterIndex].items];
-    if (de === para || !items[de]) return;
+    if (!items[de]) return;
 
     const tam = tamanhoDoBloco(items, de);
     // Largar dentro do próprio bloco não faz nada
     if (para >= de && para < de + tam) return;
 
-    // Um artigo principal nunca se mete entre outro pai e os filhos dele
-    const destino = items[de].isSubItem ? para : inicioDoBloco(items, para);
+    let destino: number;
+    if (items[de].isSubItem) {
+      destino = acima ? para : para + 1;
+    } else {
+      // Um artigo principal nunca se mete entre outro pai e os filhos dele:
+      // encosta sempre ao início, ou ao fim, do bloco de destino.
+      const inicio = inicioDoBloco(items, para);
+      destino = acima ? inicio : inicio + tamanhoDoBloco(items, inicio);
+    }
+
+    if (destino === de) return;
 
     const bloco = items.splice(de, tam);
     const ajustado = destino > de ? destino - tam : destino;
@@ -1144,27 +1164,44 @@ export default function QuoteEditor() {
                               if (aArrastar && aArrastar.cIdx === cIdx) {
                                 e.preventDefault();
                                 e.dataTransfer.dropEffect = 'move';
-                                if (linhaAlvo !== item.id) setLinhaAlvo(item.id);
+                                // Metade de cima da linha = entra por cima;
+                                // metade de baixo = entra por baixo.
+                                const caixa = e.currentTarget.getBoundingClientRect();
+                                const acima = e.clientY < caixa.top + caixa.height / 2;
+                                if (linhaAlvo?.id !== item.id || linhaAlvo?.acima !== acima) {
+                                  setLinhaAlvo({ id: item.id, acima });
+                                }
                               }
                             }}
                             onDrop={e => {
                               e.preventDefault();
                               if (aArrastar && aArrastar.cIdx === cIdx) {
-                                reordenarArtigo(cIdx, aArrastar.iIdx, iIdx);
+                                const caixa = e.currentTarget.getBoundingClientRect();
+                                const acima = e.clientY < caixa.top + caixa.height / 2;
+                                reordenarArtigo(cIdx, aArrastar.iIdx, iIdx, acima);
                               }
                               limparArrasto();
                             }}
                             onDragEnd={limparArrasto}
-                            className={`hover:bg-gray-50/50 transition-colors ${
+                            className={`transition-all duration-150 ease-out ${
                               isAuto ? 'bg-blue-50/10' : ''
                             } ${
                               // Separador só entre artigos principais: assim um
                               // artigo e os seus sub-artigos leem-se como um grupo
                               !item.isSubItem && iIdx > 0 ? 'border-t border-gray-200' : ''
-                            } ${linhaAlvo === item.id ? 'bg-blue-50/60' : ''} ${
-                              aArrastar?.cIdx === cIdx && aArrastar.iIdx === iIdx
-                                ? 'opacity-40'
+                            } ${
+                              // Traço âmbar a marcar onde o artigo vai cair
+                              linhaAlvo?.id === item.id && linhaAlvo.acima
+                                ? '[&>td]:border-t-2 [&>td]:border-t-amber-500 bg-amber-50/40'
                                 : ''
+                            } ${
+                              linhaAlvo?.id === item.id && !linhaAlvo.acima
+                                ? '[&>td]:border-b-2 [&>td]:border-b-amber-500 bg-amber-50/40'
+                                : ''
+                            } ${
+                              aArrastar?.cIdx === cIdx && aArrastar.iIdx === iIdx
+                                ? 'opacity-30 scale-[0.99]'
+                                : 'hover:bg-gray-50/50'
                             }`}
                           >
                             {/* Código do Artigo */}
@@ -1175,7 +1212,7 @@ export default function QuoteEditor() {
                                     onMouseDown={() => setLinhaArrastavel(item.id)}
                                     onMouseUp={() => setLinhaArrastavel(null)}
                                     title="Arrastar para mudar de posição"
-                                    className="cursor-grab active:cursor-grabbing text-gray-300 hover:text-gray-500 -ml-1"
+                                    className="cursor-grab active:cursor-grabbing text-amber-700 hover:bg-amber-100 rounded p-0.5 -ml-1 transition"
                                   >
                                     <GripVertical className="w-3.5 h-3.5" />
                                   </span>
