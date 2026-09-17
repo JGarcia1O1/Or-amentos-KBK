@@ -478,11 +478,18 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   // orçamento eliminado continua a ocupar o número dele.
   const [numerosUsados, setNumerosUsados] = useState<string[]>([]);
 
-  useEffect(() => {
+  // Tem de ser relida sempre que a papeleira mexe. Ao eliminar, o número
+  // passa a "Papeleira 2026-911" e o 2026-911 fica livre — mas se esta lista
+  // ficasse com a fotografia antiga, o orçamento seguinte saltava o número.
+  const atualizarNumerosUsados = React.useCallback(() => {
     QuoteService.getUsedNumbers()
       .then(setNumerosUsados)
       .catch(() => setNumerosUsados([]));
   }, []);
+
+  useEffect(() => {
+    atualizarNumerosUsados();
+  }, [atualizarNumerosUsados]);
 
 
   // Estado do PDF
@@ -1198,7 +1205,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           setCurrentView('quotes-list');
         }
         QuoteService.softDelete(id, alvo?.number || '')
-          .then(() => toast.success('Orçamento enviado para a Papeleira'))
+          .then(() => {
+            atualizarNumerosUsados();
+            toast.success('Orçamento enviado para a Papeleira');
+          })
           .catch(() => toast.error('Erro ao enviar para a Papeleira'));
       }
     );
@@ -1231,6 +1241,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           .then(async (novoNumero) => {
             const ativos = await QuoteService.getAll();
             setQuotes(ativos);
+            atualizarNumerosUsados();
             toast.success(`Orçamento reposto como "${novoNumero}"`);
           })
           .catch(() => {
@@ -1249,7 +1260,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       () => {
         setDeletedQuotes(prev => prev.filter(q => q.id !== id));
         QuoteService.purge(id)
-          .then(() => toast.success('Orçamento apagado definitivamente'))
+          .then(() => {
+            atualizarNumerosUsados();
+            toast.success('Orçamento apagado definitivamente');
+          })
           .catch(() => {
             toast.error('Erro ao apagar orçamento');
             carregarPapeleira();
@@ -1271,13 +1285,14 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         const conjunto = new Set(ids);
         setDeletedQuotes(prev => prev.filter(q => !conjunto.has(q.id)));
         QuoteService.purgeMany(ids)
-          .then(() =>
+          .then(() => {
+            atualizarNumerosUsados();
             toast.success(
               quantos === 1
                 ? 'Orçamento apagado definitivamente'
                 : `${quantos} orçamentos apagados definitivamente`
-            )
-          )
+            );
+          })
           .catch(() => {
             toast.error('Erro ao apagar orçamentos');
             carregarPapeleira();
