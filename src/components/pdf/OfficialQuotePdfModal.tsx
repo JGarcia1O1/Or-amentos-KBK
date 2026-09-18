@@ -21,6 +21,44 @@ export default function OfficialQuotePdfModal() {
   const subtotal = calculateQuoteSubtotal(quote);
   const totalWithVat = calculateQuoteTotalWithVat(quote);
 
+  /**
+   * Secção final: Observações + Totais.
+   *
+   * Vive aqui em variável, e não no meio do JSX, porque é desenhada DENTRO do
+   * último capítulo. Ver a nota sobre paginação junto ao map dos capítulos.
+   * O conteúdo e as classes são exatamente os mesmos de antes — só mudou o
+   * sítio onde é montada.
+   */
+  const blocoTotais = (
+    <div className="flex justify-between items-end pt-8 pb-4 break-inside-avoid gap-8">
+      {/* Observações da Obra / Faturação */}
+      <div className="flex-1 min-w-0 w-0 text-[11px] text-gray-700">
+        {quote.notes && (
+          <div className="bg-gray-50/50 p-4 border-l-2 border-gray-300 rounded-r-lg mt-4">
+            <div className="font-bold text-gray-900 mb-2 uppercase text-[9px] tracking-wider">Observações / Dados de Faturação:</div>
+            <div className="whitespace-pre-line break-all leading-relaxed">{quote.notes}</div>
+          </div>
+        )}
+      </div>
+
+      {/* Bloco de Totais Final (Minimalista) */}
+      <div className="w-80 space-y-3 text-right text-[11px] shrink-0">
+        <div className="border-t border-gray-200 pt-4 flex justify-between text-gray-600 font-medium">
+          <span>Sub-Total</span>
+          <span className="font-mono text-gray-900">{formatCurrency(subtotal)}</span>
+        </div>
+        <div className="flex justify-between text-gray-600 font-medium">
+          <span>Valor Final da Proposta</span>
+          <span className="font-mono text-gray-900">{formatCurrency(subtotal)}</span>
+        </div>
+        <div className="border-t border-gray-200 pt-4 mt-2 flex justify-between text-gray-900 font-bold text-[13px]">
+          <span>Total com IVA (23%)</span>
+          <span className="font-mono">{formatCurrency(totalWithVat)}</span>
+        </div>
+      </div>
+    </div>
+  );
+
   const handlePrint = () => {
     // Definir nome do ficheiro PDF (O browser usa o document.title como nome padrão no Guardar como PDF)
     const originalTitle = document.title;
@@ -197,8 +235,34 @@ export default function OfficialQuotePdfModal() {
                 {activeChapters.map((chap, chapIdx) => {
                   const chapterSubtotal = chap.items.reduce((sum, item) => sum + calculateItemSellTotal(item), 0);
 
+                  /* PAGINAÇÃO — porque é que isto está assim:
+                   *
+                   * Os capítulos deixaram de ser indivisíveis. Antes, um capítulo
+                   * que não coubesse no que restava da folha saltava inteiro, o
+                   * que deixava páginas a meio e empurrava os totais para uma
+                   * folha só deles. Agora as linhas continuam na página seguinte
+                   * (cada <tr> continua indivisível, pela regra global do CSS) e
+                   * as páginas enchem-se.
+                   *
+                   * O último capítulo leva os totais colados por dentro do mesmo
+                   * bloco break-inside-avoid: ou cabem juntos, ou passam juntos.
+                   * É isto que impede o valor final de ficar numa página sozinho.
+                   *
+                   * Limite conhecido: se um único capítulo for mais alto do que
+                   * uma página inteira, o browser ignora o avoid e parte-o à
+                   * mesma. Nesse caso extremo os totais podem voltar a ficar
+                   * isolados. A alternativa seria passá-los para o topo da página
+                   * das Condições Gerais (decidido em 18/09/2026: fica para se
+                   * alguma vez acontecer).
+                   */
+                  const isUltimoCapitulo = chapIdx === activeChapters.length - 1;
+
                   return (
-                    <table key={chap.id} className="w-full text-left text-xs border-collapse break-inside-avoid">
+                    <div
+                      key={chap.id}
+                      className={isUltimoCapitulo ? 'break-inside-avoid' : undefined}
+                    >
+                    <table className="w-full text-left text-xs border-collapse">
                       <colgroup>
                         <col className="w-10" />
                         <col />
@@ -273,40 +337,15 @@ export default function OfficialQuotePdfModal() {
                         </tr>
                       </tbody>
                     </table>
+
+                    {/* Totais colados ao último capítulo — ver nota acima */}
+                    {isUltimoCapitulo && blocoTotais}
+                    </div>
                   );
                 })}
               </div>
             </div>
 
-            {/* Secção Final: Observações + Totais */}
-              <div className="flex justify-between items-end pt-8 pb-4 break-inside-avoid gap-8">
-                {/* Observações da Obra / Faturação */}
-                <div className="flex-1 min-w-0 w-0 text-[11px] text-gray-700">
-                  {quote.notes && (
-                    <div className="bg-gray-50/50 p-4 border-l-2 border-gray-300 rounded-r-lg mt-4">
-                      <div className="font-bold text-gray-900 mb-2 uppercase text-[9px] tracking-wider">Observações / Dados de Faturação:</div>
-                      <div className="whitespace-pre-line break-all leading-relaxed">{quote.notes}</div>
-                    </div>
-                  )}
-                </div>
-
-              {/* Bloco de Totais Final (Minimalista) */}
-              <div className="w-80 space-y-3 text-right text-[11px] shrink-0">
-                <div className="border-t border-gray-200 pt-4 flex justify-between text-gray-600 font-medium">
-                  <span>Sub-Total</span>
-                  <span className="font-mono text-gray-900">{formatCurrency(subtotal)}</span>
-                </div>
-                <div className="flex justify-between text-gray-600 font-medium">
-                  <span>Valor Final da Proposta</span>
-                  <span className="font-mono text-gray-900">{formatCurrency(subtotal)}</span>
-                </div>
-                <div className="border-t border-gray-200 pt-4 mt-2 flex justify-between text-gray-900 font-bold text-[13px]">
-                  <span>Total com IVA (23%)</span>
-                  <span className="font-mono">{formatCurrency(totalWithVat)}</span>
-                </div>
-              </div>
-            </div>
-            
                   </div>
                 </td>
               </tr>
