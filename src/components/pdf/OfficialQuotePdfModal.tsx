@@ -32,12 +32,14 @@ export default function OfficialQuotePdfModal() {
    * uma página só dele. Com as Condições sempre a seguir, isso não pode
    * acontecer, seja qual for o comprimento do orçamento.
    *
-   * Opção B, decidida pelo João a 18/09/2026. O conteúdo é o mesmo de sempre;
-   * só o pt-8/pb-4 passou a pt-2/pb-8, porque agora abre a página em vez de a
-   * fechar.
+   * Opção B, decidida pelo João a 18/09/2026. O conteúdo é o mesmo de sempre.
+   * Só o espaçamento mudou, porque agora abre a página em vez de a fechar:
+   * o antigo pt-8/pb-4 deu lugar a pb-12, e a folga por cima vem do pt-4 do
+   * <td> da secção. Resultado: mais perto do cabeçalho, mais longe das
+   * Condições Gerais.
    */
   const blocoTotais = (
-    <div className="flex justify-between items-end pt-2 pb-8 break-inside-avoid gap-8">
+    <div className="flex justify-between items-end pb-12 break-inside-avoid gap-8">
       {/* Observações da Obra / Faturação */}
       <div className="flex-1 min-w-0 w-0 text-[11px] text-gray-700">
         {quote.notes && (
@@ -359,7 +361,7 @@ export default function OfficialQuotePdfModal() {
             {/* ============================================================ */}
             <tbody className="w-full page-break">
               <tr>
-                <td className="pt-8">
+                <td className="pt-4">
                   {blocoTotais}
 
                   <div className="space-y-4 text-[10px] text-gray-700 leading-relaxed">
