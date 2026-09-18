@@ -218,6 +218,26 @@ export interface QuoteChapter {
   items: QuoteItem[];
 }
 
+/**
+ * Modelo de capítulo — uma lista de artigos guardada com um nome, para encher
+ * um capítulo de uma vez (cozinha, roupeiro, e por aí fora).
+ *
+ * Aplicar um modelo COPIA os artigos. Não fica nenhuma ligação viva: alterar o
+ * modelo mais tarde não altera os orçamentos já feitos, nem o contrário.
+ *
+ * Não confundir com QuoteTemplate, que é a receita por unidade do configurador.
+ */
+export interface ChapterTemplate {
+  id?: string;
+  name: string;             // name
+  items: QuoteItem[];       // items (jsonb)
+  notes?: string;           // notes
+  sortOrder: number;        // sort_order
+  isActive: boolean;        // is_active — false = arquivado, não aparece na lista
+  createdAt?: string;       // created_at
+  createdBy?: string;       // created_by
+}
+
 export interface Quote {
   id: string;
   number: string; // ex: '2026-009'

@@ -22,6 +22,7 @@ import {
 } from '@/lib/calculator';
 import TechnicalCalculatorModal from './TechnicalCalculatorModal';
 import QuotePaymentsPanel from './QuotePaymentsPanel';
+import ChapterTemplateMenu from './ChapterTemplateMenu';
 import { SearchableMaterialDropdown } from '@/components/ui/SearchableMaterialDropdown';
 import {
   ArrowLeft,
@@ -63,7 +64,12 @@ export default function QuoteEditor() {
     openPdfPreview,
     hideInternal,
     isAdmin,
+    can,
+    userProfile,
   } = useApp();
+
+  // Quem pode mexer nos modelos de capítulo é quem pode editar orçamentos.
+  const podeEditarOrcamentos = can('quotes', 'edit');
 
   // Itens expandidos para o painel de fabrico automático
   const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>({});
@@ -321,6 +327,51 @@ export default function QuoteEditor() {
       idx === chapterIndex ? { ...chap, title } : chap
     );
     updateSelectedQuote({ ...quote, chapters: newChapters });
+  };
+
+  /**
+   * Enche um capítulo a partir de um modelo guardado.
+   *
+   * Os artigos são COPIADOS — o modelo e o orçamento ficam independentes um do
+   * outro a partir daqui. Cada cópia leva um id novo, senão o React baralha-se
+   * com chaves repetidas quando o mesmo modelo é aplicado duas vezes.
+   *
+   * A numeração visível (1.1, 2.2.1) é derivada da posição e da flag isSubItem,
+   * por isso não é preciso acertar nada à mão. Só se garante que o primeiro
+   * artigo do capítulo nunca fica como sub-artigo órfão.
+   */
+  const handleAplicarModelo = (
+    chapterIndex: number,
+    itemsModelo: QuoteItem[],
+    modo: 'acrescentar' | 'substituir'
+  ) => {
+    const capitulo = quote.chapters[chapterIndex];
+    if (!capitulo) return;
+
+    const base = modo === 'substituir' ? [] : capitulo.items;
+    const carimbo = Date.now();
+
+    const copiados: QuoteItem[] = itemsModelo.map((item, i) => ({
+      ...item,
+      id: `${chapterIndex + 1}.${carimbo}.${i}`,
+      code: `${chapterIndex + 1}.${base.length + i + 1}`,
+    }));
+
+    const juntos = [...base, ...copiados];
+    if (juntos.length > 0 && juntos[0].isSubItem) {
+      juntos[0] = { ...juntos[0], isSubItem: false };
+    }
+
+    const newChapters = quote.chapters.map((chap, idx) =>
+      idx === chapterIndex ? { ...chap, items: juntos } : chap
+    );
+
+    updateSelectedQuote({ ...quote, chapters: newChapters });
+    toast.success(
+      modo === 'substituir'
+        ? `Capítulo substituído pelo modelo (${copiados.length} artigos).`
+        : `${copiados.length} artigos acrescentados a partir do modelo.`
+    );
   };
 
   // Gestão de Artigos dentro de um Capítulo
@@ -1039,6 +1090,14 @@ export default function QuoteEditor() {
                   onChange={e => handleUpdateChapterTitle(cIdx, e.target.value)}
                   placeholder="Título do Capítulo (ex: Roupeiros, Portas, Mob. Diverso)"
                   className="font-bold text-[13px] bg-transparent border-b border-dashed border-gray-400 focus:border-black outline-none px-1 text-gray-900 w-full sm:w-80 min-w-0"
+                />
+                {/* Modelos: enche o capítulo de uma vez a partir de um guardado */}
+                <ChapterTemplateMenu
+                  chapterTitle={chap.title}
+                  itemsAtuais={chap.items}
+                  podeEditar={podeEditarOrcamentos}
+                  criadoPor={userProfile?.displayName || userProfile?.email}
+                  onAplicar={(items, modo) => handleAplicarModelo(cIdx, items, modo)}
                 />
               </div>
 
