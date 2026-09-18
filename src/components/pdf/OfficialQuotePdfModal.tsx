@@ -24,13 +24,20 @@ export default function OfficialQuotePdfModal() {
   /**
    * Secção final: Observações + Totais.
    *
-   * Vive aqui em variável, e não no meio do JSX, porque é desenhada DENTRO do
-   * último capítulo. Ver a nota sobre paginação junto ao map dos capítulos.
-   * O conteúdo e as classes são exatamente os mesmos de antes — só mudou o
-   * sítio onde é montada.
+   * Abre a última página, com as Condições Gerais de Venda por baixo.
+   *
+   * Está aqui em variável, e não solta no meio do JSX, porque é montada dentro
+   * da secção final. Antes fechava a lista de artigos — e quando o último
+   * capítulo acabava perto do fim de uma folha, este bloco saltava sozinho para
+   * uma página só dele. Com as Condições sempre a seguir, isso não pode
+   * acontecer, seja qual for o comprimento do orçamento.
+   *
+   * Opção B, decidida pelo João a 18/09/2026. O conteúdo é o mesmo de sempre;
+   * só o pt-8/pb-4 passou a pt-2/pb-8, porque agora abre a página em vez de a
+   * fechar.
    */
   const blocoTotais = (
-    <div className="flex justify-between items-end pt-8 pb-4 break-inside-avoid gap-8">
+    <div className="flex justify-between items-end pt-2 pb-8 break-inside-avoid gap-8">
       {/* Observações da Obra / Faturação */}
       <div className="flex-1 min-w-0 w-0 text-[11px] text-gray-700">
         {quote.notes && (
@@ -244,20 +251,20 @@ export default function OfficialQuotePdfModal() {
                    * (cada <tr> continua indivisível, pela regra global do CSS) e
                    * as páginas enchem-se.
                    *
+                   * Os totais NÃO vivem aqui. Vivem no topo da última página,
+                   * antes das Condições Gerais de Venda (Opção B, decidida pelo
+                   * João a 18/09/2026), para que o valor final nunca possa ficar
+                   * numa folha sozinho.
+                   *
                    * NÃO voltar a envolver o capítulo e os totais num
-                   * break-inside-avoid comum. Já foi tentado a 18/09/2026: num
+                   * break-inside-avoid comum. Foi tentado nesse mesmo dia: num
                    * orçamento de um só capítulo isso cria um bloco indivisível do
                    * tamanho do documento todo, que salta para a página seguinte e
                    * deixa a primeira em branco. O remédio saiu pior que a doença.
-                   *
-                   * Os totais continuam a ser um bloco indivisível seu, desenhado
-                   * a seguir ao último capítulo, exatamente como sempre foram.
                    */
-                  const isUltimoCapitulo = chapIdx === activeChapters.length - 1;
 
                   return (
-                    <div key={chap.id}>
-                    <table className="w-full text-left text-xs border-collapse">
+                    <table key={chap.id} className="w-full text-left text-xs border-collapse">
                       <colgroup>
                         <col className="w-10" />
                         <col />
@@ -333,9 +340,6 @@ export default function OfficialQuotePdfModal() {
                       </tbody>
                     </table>
 
-                    {/* Totais, a seguir ao último capítulo — ver nota acima */}
-                    {isUltimoCapitulo && blocoTotais}
-                    </div>
                   );
                 })}
               </div>
@@ -347,11 +351,17 @@ export default function OfficialQuotePdfModal() {
             </tbody>
 
             {/* ============================================================ */}
-            {/* PÁGINA FINAL: CONDIÇÕES GERAIS DE VENDA                      */}
+            {/* PÁGINA FINAL: TOTAIS + CONDIÇÕES GERAIS DE VENDA             */}
+            {/*                                                              */}
+            {/* Os totais abrem esta página e as Condições seguem por baixo. */}
+            {/* É o que garante que o valor final nunca fica numa folha       */}
+            {/* sozinho, qualquer que seja o comprimento do orçamento.        */}
             {/* ============================================================ */}
             <tbody className="w-full page-break">
               <tr>
                 <td className="pt-8">
+                  {blocoTotais}
+
                   <div className="space-y-4 text-[10px] text-gray-700 leading-relaxed">
                     <div className="text-center font-bold text-xs uppercase text-gray-900 border-b border-gray-300 pb-2">
               CONDIÇÕES GERAIS DE VENDA
