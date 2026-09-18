@@ -244,24 +244,19 @@ export default function OfficialQuotePdfModal() {
                    * (cada <tr> continua indivisível, pela regra global do CSS) e
                    * as páginas enchem-se.
                    *
-                   * O último capítulo leva os totais colados por dentro do mesmo
-                   * bloco break-inside-avoid: ou cabem juntos, ou passam juntos.
-                   * É isto que impede o valor final de ficar numa página sozinho.
+                   * NÃO voltar a envolver o capítulo e os totais num
+                   * break-inside-avoid comum. Já foi tentado a 18/09/2026: num
+                   * orçamento de um só capítulo isso cria um bloco indivisível do
+                   * tamanho do documento todo, que salta para a página seguinte e
+                   * deixa a primeira em branco. O remédio saiu pior que a doença.
                    *
-                   * Limite conhecido: se um único capítulo for mais alto do que
-                   * uma página inteira, o browser ignora o avoid e parte-o à
-                   * mesma. Nesse caso extremo os totais podem voltar a ficar
-                   * isolados. A alternativa seria passá-los para o topo da página
-                   * das Condições Gerais (decidido em 18/09/2026: fica para se
-                   * alguma vez acontecer).
+                   * Os totais continuam a ser um bloco indivisível seu, desenhado
+                   * a seguir ao último capítulo, exatamente como sempre foram.
                    */
                   const isUltimoCapitulo = chapIdx === activeChapters.length - 1;
 
                   return (
-                    <div
-                      key={chap.id}
-                      className={isUltimoCapitulo ? 'break-inside-avoid' : undefined}
-                    >
+                    <div key={chap.id}>
                     <table className="w-full text-left text-xs border-collapse">
                       <colgroup>
                         <col className="w-10" />
@@ -338,7 +333,7 @@ export default function OfficialQuotePdfModal() {
                       </tbody>
                     </table>
 
-                    {/* Totais colados ao último capítulo — ver nota acima */}
+                    {/* Totais, a seguir ao último capítulo — ver nota acima */}
                     {isUltimoCapitulo && blocoTotais}
                     </div>
                   );
