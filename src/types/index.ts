@@ -238,6 +238,30 @@ export interface ChapterTemplate {
   createdBy?: string;       // created_by
 }
 
+export type ChapterTemplateRequestStatus = 'pendente' | 'aprovado' | 'recusado';
+
+/**
+ * Pedido de remoção de um modelo de capítulo.
+ *
+ * A lista de modelos é partilhada por toda a equipa: um modelo apagado leva
+ * atrás o trabalho de quem o montou. Por isso só administradores removem.
+ * Quem não é admin regista aqui o pedido e o admin decide.
+ *
+ * `templateName` é uma cópia do nome no momento do pedido — assim o histórico
+ * continua a ler-se mesmo depois de o modelo sair da lista.
+ */
+export interface ChapterTemplateRequest {
+  id: string;
+  templateId?: string | null;   // template_id
+  templateName: string;         // template_name
+  reason?: string | null;       // reason
+  status: ChapterTemplateRequestStatus; // status
+  requestedBy?: string | null;  // requested_by
+  decidedBy?: string | null;    // decided_by
+  decidedAt?: string | null;    // decided_at
+  createdAt?: string | null;    // created_at
+}
+
 export interface Quote {
   id: string;
   number: string; // ex: '2026-009'

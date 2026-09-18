@@ -1096,6 +1096,7 @@ export default function QuoteEditor() {
                   chapterTitle={chap.title}
                   itemsAtuais={chap.items}
                   podeEditar={podeEditarOrcamentos}
+                  isAdmin={isAdmin}
                   criadoPor={userProfile?.displayName || userProfile?.email}
                   onAplicar={(items, modo) => handleAplicarModelo(cIdx, items, modo)}
                 />
